@@ -202,7 +202,7 @@ export function App() {
                   await putApi("/project", { language: "zh" });
                   refetchProject();
                 }}
-                className={`px-2.5 py-1 text-[16px] font-medium rounded-md ${currentLang === "zh" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                className={`px-2.5 py-1 text-[16px] font-medium rounded-md ${project?.language === "zh" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
                 中
               </button>
@@ -211,9 +211,18 @@ export function App() {
                   await putApi("/project", { language: "en" });
                   refetchProject();
                 }}
-                className={`px-2.5 py-1 text-[16px] font-medium rounded-md ${currentLang === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                className={`px-2.5 py-1 text-[16px] font-medium rounded-md ${project?.language === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
                 EN
+              </button>
+              <button
+                onClick={async () => {
+                  await putApi("/project", { language: "vi" });
+                  refetchProject();
+                }}
+                className={`px-2.5 py-1 text-[16px] font-medium rounded-md ${project?.language === "vi" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              >
+                VI
               </button>
             </div>
 

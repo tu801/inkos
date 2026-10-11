@@ -51,7 +51,7 @@ const FOUNDATION_FILE_LABELS_EN: Record<string, string> = {
 export function foundationFileLabel(name: string): string | undefined {
   const zh = FOUNDATION_FILE_LABELS[name];
   if (zh === undefined) return undefined;
-  return getAppLanguage() === "en" ? FOUNDATION_FILE_LABELS_EN[name] ?? zh : zh;
+  return getAppLanguage() !== "zh" ? FOUNDATION_FILE_LABELS_EN[name] ?? zh : zh;
 }
 
 // --- current_state.md ---------------------------------------------------

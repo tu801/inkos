@@ -1,6 +1,6 @@
 import { formatLengthCount, resolveLengthCountingMode, type Observation } from "@actalk/inkos-core";
 
-export type CliLanguage = "zh" | "en";
+export type CliLanguage = "zh" | "en" | "vi";
 
 type WriteResultShape = {
   readonly chapterNumber: number;
@@ -17,7 +17,7 @@ type ImportResultShape = {
 };
 
 function localize(language: CliLanguage, messages: { zh: string; en: string }): string {
-  return language === "en" ? messages.en : messages.zh;
+  return language !== "zh" ? messages.en : messages.zh;
 }
 
 function normalizeCliLanguageTag(value: string | undefined): CliLanguage | undefined {
@@ -31,6 +31,9 @@ function normalizeCliLanguageTag(value: string | undefined): CliLanguage | undef
   }
   if (normalized.startsWith("zh")) {
     return "zh";
+  }
+  if (normalized.startsWith("vi")) {
+    return "vi";
   }
   return undefined;
 }
@@ -421,7 +424,7 @@ export function formatChapterSyncNoChanges(language: CliLanguage, checked: numbe
 export function formatChapterSyncChange(
   language: CliLanguage,
   change: { number: number; title: string; previousWordCount: number; wordCount: number },
-  countingMode: "zh_chars" | "en_words",
+  countingMode: "zh_chars" | "en_words" | "vi_words",
 ): string {
   const from = formatLengthCount(change.previousWordCount, countingMode);
   const to = formatLengthCount(change.wordCount, countingMode);

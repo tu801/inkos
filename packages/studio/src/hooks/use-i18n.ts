@@ -374,7 +374,8 @@ export type TFunction = (key: StringKey) => string;
 
 export function useI18n() {
   const { data } = useApi<{ language: string }>("/project");
-  const lang: Lang = data?.language === "en" ? "en" : "zh";
+  // Vietnamese projects use the English UI; Chinese stays the default while the project is loading.
+  const lang: Lang = data?.language === "en" || data?.language === "vi" ? "en" : "zh";
 
   function t(key: StringKey): string {
     return strings[key][lang];

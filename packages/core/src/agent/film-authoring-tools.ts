@@ -3,6 +3,7 @@ import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { applyGraphDelta } from "../interactive-film/authoring-store.js";
 import type { LLMClient } from "../llm/provider.js";
 import { runWorkerAgentTool } from "./worker-agent.js";
+import { withLanguageOutputInstruction } from "../utils/language.js";
 import { loadStoryGraph, storyGraphPath } from "../interactive-film/graph-store.js";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -233,18 +234,18 @@ const ReviseNodeParams = Type.Object({
   }),
 });
 
-export type FilmAuthoringLanguage = "zh" | "en";
+export type FilmAuthoringLanguage = "zh" | "en" | "vi";
 
 function nodeSystemPrompt(language: FilmAuthoringLanguage, revision = false): string {
-  const operation = language === 'en'
+  const operation = language !== 'zh'
     ? revision ? 'Use the activated interactive-film Skill to revise the requested node. Submit only the selected fields through submit_story_node_revision. All other node fields are read-only and preserved by the host.'
       : 'Use the activated interactive-film Skill and current graph context to submit the requested node through submit_story_node. Every choices[].targetNodeId must identify an existing node. The host owns the node id.'
     : revision ? '按已激活的互动影游 Skill 修改指定节点。通过 submit_story_node_revision 仅提交选定字段；其他节点字段是只读参考，由宿主保持。'
       : '按已激活的互动影游 Skill 和当前图上下文，通过 submit_story_node 提交指定节点。choices[].targetNodeId 必须指向已存在的节点，节点 id 由宿主提供。';
-  const rendering = language === 'en'
+  const rendering = language !== 'zh'
     ? 'The player renders sceneDesc and condition-matching dialogue on entry, before a choice is made. Outgoing choice effects apply only after that choice; the destination node then renders with the resulting state. sceneDesc is unconditional. Node prose is player-facing; conditions belong in dialogue[].condition.'
     : '播放器进入节点后先显示 sceneDesc 和符合 condition 的对白，随后才让玩家选择。选项 effects 仅在点击该选项后生效，目标节点使用生效后的状态显示。sceneDesc 无条件显示。节点正文面向玩家，状态条件写在 dialogue[].condition 中。';
-  return `${operation}\n${rendering}`;
+  return withLanguageOutputInstruction(language, `${operation}\n${rendering}`);
 }
 
 function graphUpdatedDetails(rev: number, extra: Record<string, unknown> = {}) {
@@ -388,8 +389,8 @@ export function createDraftStructureTool(
         return textResult(`Reference topology applied: ${next.nodes.length} nodes; ${missingSceneNodeIds.length} scenes still need generation.`,graphUpdatedDetails(rev,{skillIds:deps.skillIds?.()??[],referenceTopology:{workId:params.referenceWorkId,sourceHash},missingSceneNodeIds}));
       }
       const context = graph ? buildFilmAuthoringContext(graph) : "(empty graph)";
-      const systemPrompt = language === "en" ? STRUCT_SYSTEM_EN : STRUCT_SYSTEM_ZH;
-      const userPrompt = language === "en"
+      const systemPrompt = language !== "zh" ? withLanguageOutputInstruction(language, STRUCT_SYSTEM_EN) : STRUCT_SYSTEM_ZH;
+      const userPrompt = language !== "zh"
         ? `${context}\n\nSkeleton instruction: ${params.instruction}`
         : `${context}\n\n骨架指令：${params.instruction}`;
       const requirements=await readFilmRequirements(projectRoot,projectId);

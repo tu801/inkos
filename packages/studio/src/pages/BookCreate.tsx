@@ -28,7 +28,7 @@ export interface BookCreatePayload {
   readonly title: string;
   readonly genre: string;
   readonly platform: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly targetChapters: number;
   readonly chapterWordCount: number;
   readonly blurb: string;
@@ -107,15 +107,15 @@ export function pickValidValue(current: string, available: ReadonlyArray<string>
   return current && available.includes(current) ? current : available[0] ?? "";
 }
 
-export function defaultChapterWordsForLanguage(language: "zh" | "en"): string {
-  return language === "en" ? "2000" : "3000";
+export function defaultChapterWordsForLanguage(language: "zh" | "en" | "vi"): string {
+  return language === "zh" ? "3000" : "2000";
 }
 
-export function platformOptionsForLanguage(language: "zh" | "en"): ReadonlyArray<PlatformOption> {
-  return language === "en" ? PLATFORMS_EN : PLATFORMS_ZH;
+export function platformOptionsForLanguage(language: "zh" | "en" | "vi"): ReadonlyArray<PlatformOption> {
+  return language === "zh" ? PLATFORMS_ZH : PLATFORMS_EN;
 }
 
-export function defaultBookCreateForm(language: "zh" | "en"): BookCreateFormState {
+export function defaultBookCreateForm(language: "zh" | "en" | "vi"): BookCreateFormState {
   return {
     title: "",
     genre: "",
@@ -142,7 +142,7 @@ export function isBookCreateFormReady(form: BookCreateFormState): boolean {
   );
 }
 
-export function buildBookCreatePayload(form: BookCreateFormState, language: "zh" | "en"): BookCreatePayload {
+export function buildBookCreatePayload(form: BookCreateFormState, language: "zh" | "en" | "vi"): BookCreatePayload {
   const targetChapters = parsePositiveInteger(form.targetChapters);
   const chapterWordCount = parsePositiveInteger(form.chapterWordCount);
   if (!targetChapters || !chapterWordCount || !isBookCreateFormReady(form)) {
@@ -201,8 +201,8 @@ export async function waitForBookReady(bookId: string, options: WaitForBookReady
 export function BookCreate({ nav, theme, t: _t }: { nav: Nav; theme: Theme; t: TFunction }) {
   const c = useColors(theme);
   const { data: project } = useApi<{ language: string }>("/project");
-  const projectLang = project?.language === "en" ? "en" : "zh";
-  const copy = PAGE_COPY[projectLang];
+  const projectLang = project?.language === "en" || project?.language === "vi" ? project.language : "zh";
+  const copy = PAGE_COPY[projectLang === "zh" ? "zh" : "en"];
   const platformChoices = platformOptionsForLanguage(projectLang);
   const [form, setForm] = useState<BookCreateFormState>(() => defaultBookCreateForm(projectLang));
   const [creating, setCreating] = useState(false);

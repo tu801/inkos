@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Type, type Static } from "@mariozechner/pi-ai";
 import { BaseAgent, type AgentContext } from "../agents/base.js";
+import { withLanguageOutputInstruction } from "../utils/language.js";
 import {
   PlayActionIntentSchema,
   PlayMutationSchema,
@@ -14,7 +15,7 @@ export interface PlayOpeningStateInput {
   readonly sceneText: string;
   readonly suggestedActions: readonly string[];
   readonly context: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly worldPremise?: string;
 }
 
@@ -27,7 +28,7 @@ export interface PlayTurnInput {
   readonly context: string;
   readonly replayContext?: string;
   readonly mode: "open" | "guided";
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly worldPremise?: string;
 }
 
@@ -196,7 +197,7 @@ export class PlayOpeningStateAgent extends BaseAgent {
   async extract(input: PlayOpeningStateInput): Promise<PlayMutation> {
     const language = input.language ?? "zh";
     const { result } = await this.submitStructured([
-      { role: "system", content: buildOpeningStateSystemPrompt(language) },
+      { role: "system", content: withLanguageOutputInstruction(language, buildOpeningStateSystemPrompt(language)) },
       { role: "user", content: buildOpeningStateUserPrompt(input, language) },
     ], OPENING_STATE_TOOL, { temperature: 0.15, maxTokens: 4096 });
     const mutation = mutationFromStructuredResult(result, input.turn, "look");
@@ -219,7 +220,7 @@ export class PlayTurnAgent extends BaseAgent {
   async run(input: PlayTurnInput): Promise<PlayTurnResult> {
     const language = input.language ?? "zh";
     const { result } = await this.submitStructured([
-      { role: "system", content: buildTurnSystemPrompt(input.mode, language) },
+      { role: "system", content: withLanguageOutputInstruction(language, buildTurnSystemPrompt(input.mode, language)) },
       { role: "user", content: buildTurnUserPrompt(input, language) },
     ], playTurnTool(input.mode,input.choiceCount,input.validateMutation,input.turn), { temperature: 0.4, maxTokens: 8192 });
     const action = PlayActionIntentSchema.parse(result.action);
@@ -237,7 +238,7 @@ export class PlayTurnAgent extends BaseAgent {
   async renderExisting(input: PlayTurnInput): Promise<PlaySceneRender> {
     const preserveChoices = input.currentSuggestedActions !== undefined;
     const { result } = await this.submitStructured([
-      { role: "system", content: "Rewrite the supplied scene while preserving every established action, fact, count, time, identity and outcome. This is the settled scene after the previous action, not a new player turn. Current state and original scene are authoritative. " + (preserveChoices ? "Return only narrative sceneText. Keep the supplied choices possible; their labels are separate interface elements, so do not append the choice list to sceneText." : "Return narrative sceneText and grounded suggestedActions as separate fields; do not append the choice list to sceneText.") + " Do not invent or change world facts." },
+      { role: "system", content: withLanguageOutputInstruction(input.language ?? "zh", "Rewrite the supplied scene while preserving every established action, fact, count, time, identity and outcome. This is the settled scene after the previous action, not a new player turn. Current state and original scene are authoritative. " + (preserveChoices ? "Return only narrative sceneText. Keep the supplied choices possible; their labels are separate interface elements, so do not append the choice list to sceneText." : "Return narrative sceneText and grounded suggestedActions as separate fields; do not append the choice list to sceneText.") + " Do not invent or change world facts.") },
       { role: "user", content: JSON.stringify({turn:input.turn,language:input.language??"zh",worldContract:input.worldPremise,
         settledContextAndScene:input.context,previousPlayerAction:input.input,rewriteRequest:input.replayContext,
         ...(preserveChoices?{unchangedSuggestedActions:input.currentSuggestedActions}:{})}) },
@@ -311,8 +312,8 @@ function hasMutationResult(mutation: PlayMutation): boolean {
     || mutation.notes.length > 0;
 }
 
-function buildOpeningStateSystemPrompt(language: "zh" | "en"): string {
-  return language === "en"
+function buildOpeningStateSystemPrompt(language: "zh" | "en" | "vi"): string {
+  return language !== "zh"
     ? [
         "Extract the authoritative world state already established by the supplied opening scene and world contract.",
         "Do not rewrite the scene or add facts. Always create actor_player and the concrete people, places, objects, clues, and relationships needed to make the opening playable.",
@@ -327,9 +328,9 @@ function buildOpeningStateSystemPrompt(language: "zh" | "en"): string {
       ].join("\n");
 }
 
-function buildOpeningStateUserPrompt(input: PlayOpeningStateInput, language: "zh" | "en"): string {
+function buildOpeningStateUserPrompt(input: PlayOpeningStateInput, language: "zh" | "en" | "vi"): string {
   const premise = input.worldPremise?.trim();
-  return language === "en"
+  return language !== "zh"
     ? [
         `turn: ${input.turn}`,
         ...(premise ? ["World contract:", premise, ""] : []),
@@ -352,15 +353,15 @@ function buildOpeningStateUserPrompt(input: PlayOpeningStateInput, language: "zh
       ].join("\n");
 }
 
-function buildTurnSystemPrompt(mode: "open" | "guided", language: "zh" | "en"): string {
-  const choiceRule = language === "en"
+function buildTurnSystemPrompt(mode: "open" | "guided", language: "zh" | "en" | "vi"): string {
+  const choiceRule = language !== "zh"
     ? mode === "open"
       ? "The open-world surface has no suggestedActions; submit an empty array."
       : "Use suggestedActions only for sparse, grounded choices at a genuine decision point."
     : mode === "open"
       ? "开放世界不提供 suggestedActions，必须提交空数组。"
       : "只在真实抉择点提供少量、基于当前场景的 suggestedActions。";
-  return language === "en"
+  return language !== "zh"
     ? [
         "Apply the activated play-world Skill and resolve one coherent interactive-fiction turn.",
         "In one submission, normalize the player's literal action, project the authoritative world mutation, and render the resulting scene. The prose and mutation must describe the same facts.",
@@ -385,9 +386,9 @@ function buildTurnSystemPrompt(mode: "open" | "guided", language: "zh" | "en"): 
       ].join("\n");
 }
 
-function buildTurnUserPrompt(input: PlayTurnInput, language: "zh" | "en"): string {
+function buildTurnUserPrompt(input: PlayTurnInput, language: "zh" | "en" | "vi"): string {
   const premise = input.worldPremise?.trim();
-  return language === "en"
+  return language !== "zh"
     ? [
         `turn: ${input.turn}`,
         ...(premise ? ["World contract:", premise, ""] : []),

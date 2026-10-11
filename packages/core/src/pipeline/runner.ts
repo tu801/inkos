@@ -83,10 +83,10 @@ function mergeChapterRevisionInstructions(
 export function buildSpinoffFoundationContext(
   parentCanon: string,
   direction: string | undefined,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): string {
   const dir = direction?.trim();
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## This is a SIDE-STORY (番外)",
       dir ? `\n## Side-story direction\n${dir}` : "",
@@ -251,7 +251,7 @@ export class PipelineRunner {
   }
 
   private localize(language: LengthLanguage, messages: { zh: string; en: string }): string {
-    return language === "en" ? messages.en : messages.zh;
+    return language !== "zh" ? messages.en : messages.zh;
   }
 
   private async resolveBookLanguage(
@@ -270,7 +270,9 @@ export class PipelineRunner {
   }
 
   private languageFromLengthSpec(lengthSpec: Pick<LengthSpec, "countingMode">): LengthLanguage {
-    return lengthSpec.countingMode === "en_words" ? "en" : "zh";
+    if (lengthSpec.countingMode === "en_words") return "en";
+    if (lengthSpec.countingMode === "vi_words") return "vi";
+    return "zh";
   }
 
   private logStage(language: LengthLanguage, message: { zh: string; en: string }): void {
@@ -828,7 +830,7 @@ export class PipelineRunner {
     const content = await this.readChapterContent(bookDir, targetChapter);
     const chapterBrief = await readChapterUserBrief(bookDir, targetChapter);
     const governed = await this.prepareExistingChapterContext(book,targetChapter,
-      chapterBrief ?? (book.language==='en'?`Review existing chapter ${targetChapter}.`:`审查现有第${targetChapter}章。`));
+      chapterBrief ?? (book.language!=='zh'?`Review existing chapter ${targetChapter}.`:`审查现有第${targetChapter}章。`));
     const auditor = new ContinuityAuditor(this.agentCtxFor("auditor", bookId));
     const language = book.language;
     this.logStage(language, {
@@ -907,7 +909,7 @@ export class PipelineRunner {
         persistedChapterBrief,
         externalContext ?? this.config.externalContext,
       );
-      const revisionIntent=effectiveExternalContext?.trim() || (language==='en'
+      const revisionIntent=effectiveExternalContext?.trim() || (language!=='zh'
         ? `Review and revise the existing chapter ${targetChapter} in ${mode} mode.`
         : `审查并以 ${mode} 模式修订现有第${targetChapter}章。`);
       const reviseControlInput=await this.prepareExistingChapterContext(book,targetChapter,revisionIntent);
@@ -916,7 +918,7 @@ export class PipelineRunner {
         || mode === "rewrite"
         || mode === "rework";
       const preRevision = explicitRevisionRequested
-        ? { observations: [], summary: language === "en" ? "User-directed revision" : "用户定向修订" }
+        ? { observations: [], summary: language !== "zh" ? "User-directed revision" : "用户定向修订" }
         : await this.collectReviewObservations({
             auditor,
             book,
@@ -943,7 +945,9 @@ export class PipelineRunner {
       const chapterLengthTarget = chapterMeta.lengthTelemetry?.target ?? book.chapterWordCount;
       const lengthLanguage = chapterMeta.lengthTelemetry?.countingMode === "en_words"
         ? "en"
-        : language;
+        : chapterMeta.lengthTelemetry?.countingMode === "vi_words"
+          ? "vi"
+          : language;
       const lengthSpec = buildLengthSpec(
         chapterLengthTarget,
         lengthLanguage,
@@ -1086,7 +1090,7 @@ export class PipelineRunner {
       if (changed) await archiveChapterVersion(bookDir, targetChapter, content, "revision");
       const reviseLang = book.language;
 
-      const downstreamRevisionNotice = language === "en"
+      const downstreamRevisionNotice = language !== "zh"
         ? `Chapter ${targetChapter} changed; re-review this downstream chapter for continuity.`
         : `第${targetChapter}章已重写，请重新检查本章与前文的连续性。`;
       const updatedIndex = index.map((ch) => {
@@ -1519,7 +1523,7 @@ export class PipelineRunner {
       chapterSummaries:renderChapterSummariesProjection(baselineSnapshot.chapterSummaries,pipelineLang)};
 
     const reducedControlInput = await this.prepareExistingChapterContext(book,targetChapter,
-      this.config.externalContext ?? (pipelineLang==='en'?`Reconstruct facts from existing chapter ${targetChapter}, preserving its prose.`:`根据现有第${targetChapter}章重建事实，保持正文。`));
+      this.config.externalContext ?? (pipelineLang!=='zh'?`Reconstruct facts from existing chapter ${targetChapter}, preserving its prose.`:`根据现有第${targetChapter}章重建事实，保持正文。`));
 
     const writer = new WriterAgent(this.agentCtxFor("writer", bookId));
     let syncedOutput = await writer.settleChapterState({
@@ -1759,7 +1763,7 @@ export class PipelineRunner {
         this.throwIfOperationAborted();
         const ch = input.chapters[i]!;
         const chapterNumber = i + 1;
-        const chapterIntent=resolvedLanguage==='en'
+        const chapterIntent=resolvedLanguage!=='zh'
           ? `Reconstruct the established facts and unresolved threads of imported chapter ${chapterNumber}. Preserve the supplied source text.`
           : `重建导入的第${chapterNumber}章已发生的事实和未解决线索，保留输入原文。`;
         const {contextPackage}=await this.prepareExistingChapterContext(book,chapterNumber,chapterIntent);
@@ -1971,7 +1975,7 @@ export class PipelineRunner {
   }
 
   private buildImportReplayStateSeed(language: LengthLanguage): string {
-    if (language === "en") {
+    if (language !== "zh") {
       return [
         "# Current State",
         "",
@@ -2005,7 +2009,7 @@ export class PipelineRunner {
   }
 
   private buildImportReplayHooksSeed(language: LengthLanguage): string {
-    if (language === "en") {
+    if (language !== "zh") {
       return [
         "# Pending Hooks",
         "",

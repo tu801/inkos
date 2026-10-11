@@ -7,6 +7,7 @@ import {readArtifactRevision} from '../harness/artifact-reader.js';
 import {currentExecutionBaselineWork} from '../harness/execution-evidence.js';
 import {chapterDocumentBody} from '../utils/chapter-document.js';
 import {changedSourceRegion} from '../utils/source-text.js';
+import { promptBaseLanguage, withLanguageOutputInstruction, type WritingLanguage } from "../utils/language.js";
 
 export interface AuditResult {
   readonly observations: ReadonlyArray<Observation>;
@@ -31,15 +32,15 @@ export class ContinuityAuditor extends BaseAgent {
     chapterNumber: number,
     _genre: string | undefined,
     options: {
-      readonly language: "zh" | "en";
+      readonly language: WritingLanguage;
       readonly contextPackage: ContextPackage;
       readonly temperature?: number;
     },
   ): Promise<AuditResult> {
-    const isEnglish = options.language === "en";
-    const systemPrompt = isEnglish
+    const isEnglish = promptBaseLanguage(options.language) === "en";
+    const systemPrompt = withLanguageOutputInstruction(options.language, isEnglish
       ? "Audit this chapter against the activated review Skill and supplied governed context. Identify each observation with a code, assessment and exact numbered source lines. Do not estimate length; the host computes it. Return a concise overall summary. An empty observations array is valid."
-      : "按已激活的审稿 Skill 和权威上下文审查本章。为每条观察提交代码、判断以及所给编号原文中的确切证据行。不估算字数，字数由宿主计算。提交简短总结，observations 为空是合法结果。";
+      : "按已激活的审稿 Skill 和权威上下文审查本章。为每条观察提交代码、判断以及所给编号原文中的确切证据行。不估算字数，字数由宿主计算。提交简短总结，observations 为空是合法结果。");
     const governedContext = renderNarrativeSelectedContext(
       options.contextPackage.selectedContext,
       options.language,

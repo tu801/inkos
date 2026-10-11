@@ -203,5 +203,9 @@ function normalizeLocale(value: string | undefined): TuiLocale | undefined {
     return "en";
   }
 
+  if (normalized.startsWith("vi")) {
+    return "en";
+  }
+
   return undefined;
 }

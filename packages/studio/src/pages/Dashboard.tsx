@@ -269,6 +269,9 @@ export function Dashboard({ nav, sse, theme, t }: { nav: Nav; sse: { messages: R
                     {book.language === "en" && (
                       <span className="px-1.5 py-0.5 rounded border border-primary/20 text-primary text-[10px] font-bold">EN</span>
                     )}
+                    {book.language === "vi" && (
+                      <span className="px-1.5 py-0.5 rounded border border-primary/20 text-primary text-[10px] font-bold">VI</span>
+                    )}
                     {book.fanficMode && (
                       <span className="flex items-center gap-1 text-purple-500">
                         <Zap size={12} />

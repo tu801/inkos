@@ -19,6 +19,11 @@ describe("truth artifact presentation", () => {
     expect(foundationFileLabel("outline/story_frame.md")).toBe("Story Foundation");
   });
 
+  it("uses English labels for the Vietnamese app language", () => {
+    setAppLanguage("vi");
+    expect(foundationFileLabel("outline/story_frame.md")).toBe("Story Foundation");
+  });
+
   it("renders current Markdown directly and extracts a readable overview", () => {
     const markdown = "# 世界观底色\n\n潮湿的港口城市，规则只对穷人生效。\n\n第二段。";
     expect(firstParagraph(markdown)).toBe("潮湿的港口城市，规则只对穷人生效。");

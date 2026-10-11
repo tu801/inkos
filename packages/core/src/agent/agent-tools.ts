@@ -92,7 +92,7 @@ function buildAgentBookConfig(input: {
   readonly title: string;
   readonly genre?: string;
   readonly platform?: Platform;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly targetChapters?: number;
   readonly chapterWordCount?: number;
   readonly minChapterLength?: number;
@@ -112,7 +112,7 @@ function buildAgentBookConfig(input: {
     targetChapters: input.targetChapters ?? defaults.targetChapters ?? 200,
     chapterWordCount: input.chapterWordCount
       ?? defaults.chapterWordCount
-      ?? defaultChapterLength(input.language === "en" ? "en" : "zh"),
+      ?? defaultChapterLength(input.language ?? "zh"),
     ...(input.minChapterLength!==undefined?{minChapterLength:input.minChapterLength}:{}),
     ...(input.maxChapterLength!==undefined?{maxChapterLength:input.maxChapterLength}:{}),
     language: input.language ?? "zh",
@@ -215,6 +215,7 @@ const ProposeActionParams = Type.Object({
     language: Type.Optional(Type.Union([
       Type.Literal("zh"),
       Type.Literal("en"),
+      Type.Literal("vi"),
     ], { description: "Confirmed writing language." })),
     targetChapters: Type.Optional(Type.Number({
       description: "Confirmed total chapter count.",
@@ -245,6 +246,7 @@ const ProposeActionParams = Type.Object({
     language: Type.Optional(Type.Union([
       Type.Literal("zh"),
       Type.Literal("en"),
+      Type.Literal("vi"),
     ], { description: "Output language of the short fiction. Fill the language the user asked the story to be written in; it may differ from the conversation language (e.g. a Chinese chat asking for an English short => en). When the user does not name one, it defaults to the conversation language." })),
     chapters: Type.Optional(Type.Number({
       minimum: 1,
@@ -340,7 +342,7 @@ const ProposeActionParams = Type.Object({
     mode: Type.Optional(Type.String({ description: "Confirmed fanfiction boundary in the user's own terms." })),
     genre: Type.Optional(Type.String({ description: "Confirmed genre." })),
     platform: Type.Optional(Type.String({ minLength: 1 })),
-    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
     targetChapters: Type.Optional(Type.Number({ description: "Confirmed total chapter count." })),
     chapterWordCount: Type.Optional(Type.Number({ description: "Confirmed per-chapter length." })),
     minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum chapter length."})),
@@ -355,7 +357,7 @@ const ProposeActionParams = Type.Object({
     resumeFrom: Type.Optional(Type.Number({ description: "Existing Work only: resume an interrupted import from this 1-based source chapter. Omit when creating a new continuation Work." })),
     genre: Type.Optional(Type.String({ description: "Genre for a newly created continuation book." })),
     platform: Type.Optional(Type.String({ minLength: 1 })),
-    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
     targetChapters: Type.Optional(Type.Number({ description: "Target total chapters for a new book." })),
     chapterWordCount: Type.Optional(Type.Number({ description: "Per-chapter length for a new book." })),
     minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum chapter length."})),
@@ -368,7 +370,7 @@ const ProposeActionParams = Type.Object({
     direction: Type.Optional(Type.String({ description: "Confirmed standalone side-story direction." })),
     genre: Type.Optional(Type.String({ description: "Optional genre override; defaults to the parent book." })),
     platform: Type.Optional(Type.String({ minLength: 1 })),
-    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
     targetChapters: Type.Optional(Type.Number({ description: "Optional chapter count; defaults to the parent book." })),
     chapterWordCount: Type.Optional(Type.Number({ description: "Optional chapter length; defaults to the parent book." })),
     minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum chapter length."})),
@@ -383,7 +385,7 @@ const ProposeActionParams = Type.Object({
     sourceName: Type.Optional(Type.String({ description: "Human-readable reference work name." })),
     genre: Type.Optional(Type.String({ description: "Confirmed genre." })),
     platform: Type.Optional(Type.String({ minLength: 1 })),
-    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+    language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
     targetChapters: Type.Optional(Type.Number({ description: "Confirmed total chapter count." })),
     chapterWordCount: Type.Optional(Type.Number({ description: "Confirmed per-chapter length." })),
     minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum chapter length."})),
@@ -482,7 +484,7 @@ function proposedActionSessionKind(action: ProposedActionName): ProposedSessionK
 
 function proposedActionPayload(
   params: ProposeActionParamsType,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): ActionPayload | undefined {
   const payloadKey = PROPOSAL_PAYLOAD_KEYS[params.action];
   if (!payloadKey) return undefined;
@@ -631,7 +633,7 @@ function assertExecutableProposedAction(params: ProposeActionParamsType, payload
 }
 
 export function createProposeActionTool(
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
   options: ProposeActionToolOptions = {},
 ): AgentTool<any, unknown> {
   const allowed = options.allowedActions;
@@ -1299,7 +1301,7 @@ const FanficCreateParams = Type.Object({
   mode: Type.Optional(Type.String({ description: "Fanfiction boundary in the user's own terms." })),
   genre: Type.Optional(Type.String()),
   platform: Type.Optional(Type.String({ minLength: 1 })),
-  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
   targetChapters: Type.Optional(Type.Integer({ minimum: 1 })),
   chapterWordCount: Type.Optional(Type.Integer({ minimum: 1 })),
   minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum per chapter from the author."})),
@@ -1367,7 +1369,7 @@ const SpinoffCreateParams = Type.Object({
   direction: Type.Optional(Type.String({ description: "Side-story direction that must not advance the parent mainline." })),
   genre: Type.Optional(Type.String()),
   platform: Type.Optional(Type.String({ minLength: 1 })),
-  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
   targetChapters: Type.Optional(Type.Integer({ minimum: 1 })),
   chapterWordCount: Type.Optional(Type.Integer({ minimum: 1 })),
   minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum per chapter from the author."})),
@@ -1438,7 +1440,7 @@ const ImitationCreateParams = Type.Object({
   sourceName: Type.Optional(Type.String({ description: "Human-readable reference work name." })),
   genre: Type.Optional(Type.String()),
   platform: Type.Optional(Type.String({ minLength: 1 })),
-  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
   targetChapters: Type.Optional(Type.Integer({ minimum: 1 })),
   chapterWordCount: Type.Optional(Type.Integer({ minimum: 1 })),
   minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum per chapter from the author."})),
@@ -1506,7 +1508,7 @@ const ContinuationImportParams = Type.Object({
   })),
   genre: Type.Optional(Type.String()),
   platform: Type.Optional(Type.String({ minLength: 1 })),
-  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en")])),
+  language: Type.Optional(Type.Union([Type.Literal("zh"), Type.Literal("en"), Type.Literal("vi")])),
   targetChapters: Type.Optional(Type.Integer({ minimum: 1 })),
   chapterWordCount: Type.Optional(Type.Integer({ minimum: 1 })),
   minChapterLength: Type.Optional(Type.Integer({minimum:1,description:"Explicit minimum per chapter from the author."})),
@@ -1695,7 +1697,7 @@ export function createShortFictionRunTool(
   projectRoot: string,
   options: {
     readonly actionPayload?: ActionPayload;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
     readonly activeWorkId?: string;
   } & SkillAwareProductionOptions = {},
 ): AgentTool<typeof ShortFictionRunParams> {
@@ -1726,7 +1728,7 @@ export function createShortFictionRunTool(
       if (activeWork && !createBuiltInWorkProfileRegistry(projectRoot).require(activeWork.profileId).capabilityIds.includes("short-fiction")) {
         throw Object.assign(new Error("The active Work does not support short fiction production"), { code: "WORK_PROFILE_MISMATCH" });
       }
-      const language = activeWork ? (activeWork.language === "en" ? "en" : "zh") : shortPayload?.language ?? options.language;
+      const language = activeWork ? (activeWork.language === "en" || activeWork.language === "vi" ? activeWork.language : "zh") : shortPayload?.language ?? options.language;
       const charsPerChapter = shortPayload?.charsPerChapter ?? params.charsPerChapter;
       const activatedSkills = resolveProductionToolSkills(options);
       const result = await runPipelineWithAgentContext(
@@ -1854,7 +1856,7 @@ export function createScriptCreationTool(
   projectRoot: string,
   options: {
     readonly actionPayload?: ActionPayload;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
   } & SkillAwareProductionOptions = {},
 ): AgentTool<typeof ScriptCreateParams> {
   return {
@@ -1945,7 +1947,7 @@ export function createStoryboardCreationTool(
   projectRoot: string,
   options: {
     readonly actionPayload?: ActionPayload;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
   } & SkillAwareProductionOptions = {},
 ): AgentTool<typeof StoryboardCreateParams> {
   return {
@@ -2043,7 +2045,7 @@ export function createInteractiveFilmCreationTool(
   projectRoot: string,
   options: {
     readonly actionPayload?: ActionPayload;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
   } & SkillAwareProductionOptions = {},
 ): AgentTool<typeof InteractiveFilmCreateParams> {
   return {
@@ -2181,7 +2183,7 @@ export function createGenerateCoverTool(
 // ---------------------------------------------------------------------------
 
 const PlayStartParams = Type.Object({
-  language:Type.Optional(Type.Union([Type.Literal('zh'),Type.Literal('en')],{description:'Language requested for the new world and its future narration. Omit to use the project language.'})),
+  language:Type.Optional(Type.Union([Type.Literal('zh'),Type.Literal('en'),Type.Literal('vi')],{description:'Language requested for the new world and its future narration. Omit to use the project language.'})),
   choiceCount:Type.Optional(Type.Integer({minimum:1,description:'Exact guided choice count. New guided worlds default to two; preserve a different user request.'})),
   title: Type.String({
     description: "Interactive world title. Use the user's natural direction as a short playable world title.",
@@ -2209,7 +2211,7 @@ type PlayStartParamsType = Static<typeof PlayStartParams>;
 
 export interface PlayStartToolOptions extends SkillAwareProductionOptions {
   readonly actionPayload?: ActionPayload;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
     readonly worldId: string;
@@ -2280,7 +2282,7 @@ export function createPlayStartTool(
       await store.ensureRun(world.id, runId);
 
       const existingTranscript = await store.readTranscript(world.id, runId);
-      const sceneText = (initialScene?.trim() || (world.language === "en"
+      const sceneText = (initialScene?.trim() || (world.language !== "zh"
         ? [`You enter "${world.title}".`, world.premise || "The scene is set. Make your first move."].join("\n")
         : [`你进入「${world.title}」。`, world.premise || "场景已经就位，等待你的第一个动作。"].join("\n"))).trim();
       const suggestedActions = world.mode === "guided"
@@ -2322,7 +2324,7 @@ export function createPlayStartTool(
 
         if (!graph?.entities?.some((entity) => entity.id === "actor_player")
           || !graph.entities.some((entity) => entity.id !== "actor_player")) {
-          throw new Error(world.language === "en"
+          throw new Error(world.language !== "zh"
             ? "Play opening state is incomplete: no usable player/world graph was created."
             : "互动世界开场状态不完整：没有生成可用的玩家与世界图谱。");
         }
@@ -2386,7 +2388,7 @@ const PlayStepParams = Type.Object({
 type PlayStepParamsType = Static<typeof PlayStepParams>;
 
 export interface PlayStepToolOptions extends SkillAwareProductionOptions {
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
     readonly worldId: string;
@@ -2419,7 +2421,7 @@ const PlayReviseParams = Type.Object({
 type PlayReviseParamsType = Static<typeof PlayReviseParams>;
 
 export interface PlayReviseToolOptions extends SkillAwareProductionOptions {
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
     readonly worldId: string;
@@ -2518,7 +2520,7 @@ type PlayEditParamsType = Static<typeof PlayEditParams>;
 export function createPlayEditTool(
   projectRoot: string,
   sessionId: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): AgentTool<typeof PlayEditParams> {
   return {
     name: "play_edit",
@@ -2536,11 +2538,11 @@ export function createPlayEditTool(
       const runId = "main";
       const world = await store.loadWorld(worldId);
       if (!world) {
-        throw new Error(language === "en"
+        throw new Error(language !== "zh"
           ? "There is no interactive world to edit yet. Start one with play_start first."
           : "还没有可编辑的互动世界。先用 play_start 开一局。");
       }
-      const isZh = (world.language ?? "zh") !== "en";
+      const isZh = (world.language ?? "zh") === "zh";
 
       const patch: Parameters<PlayStore["updateWorld"]>[1] = {};
       if(params.choiceCount!==undefined)patch.choiceCount=params.choiceCount;
@@ -2660,7 +2662,7 @@ export function createPlayStepTool(
       const runId = "main";
       const world = await store.loadWorld(worldId);
       if (!world) {
-        throw new Error(options.language === "en"
+        throw new Error((options.language ?? "zh") !== "zh"
           ? "There is no interactive world to advance yet. Start one with play_start first."
           : "还没有可推进的互动世界。先用 play_start 开一局。");
       }
@@ -2747,11 +2749,11 @@ export function createPlayReviseTool(
       const runId = "main";
       const world = await store.loadWorld(worldId);
       if (!world) {
-        throw new Error(options.language === "en"
+        throw new Error((options.language ?? "zh") !== "zh"
           ? "There is no interactive world to redo yet. Start one with play_start first."
           : "还没有可重做的互动世界。先用 play_start 开一局。");
       }
-      const isZh = (world.language ?? "zh") !== "en";
+      const isZh = (world.language ?? "zh") === "zh";
       const activatedSkills = resolveProductionToolSkills(options);
       const db = createPlayDB(store.runDir(worldId, runId));
       let runner: ({
@@ -2972,7 +2974,7 @@ const ResyncChapterStateParams = Type.Object({
 export function createResyncChapterStateTool(
   pipeline: PipelineRunner,
   activeBookId: string | null,
-  options: SkillAwareProductionOptions & { readonly language?: "zh" | "en" } = {},
+  options: SkillAwareProductionOptions & { readonly language?: "zh" | "en" | "vi" } = {},
 ): AgentTool<typeof ResyncChapterStateParams> {
   return {
     name: "resync_chapter_state",
@@ -2993,7 +2995,7 @@ export function createResyncChapterStateTool(
         }),
       );
       const observations = result.audit.observations;
-      const zh = options.language !== "en";
+      const zh = (options.language ?? "zh") === "zh";
       const summary = [
         zh
           ? `第 ${result.chapter.chapterNumber} 章正文未改动；状态、摘要与伏笔已重建，记录 ${observations.length} 条审查观察。`

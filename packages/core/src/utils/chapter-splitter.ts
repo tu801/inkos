@@ -3,16 +3,16 @@ export interface SplitChapter {
   readonly content: string;
 }
 
-const NUMBERED_HEADING = /^#{0,6}\s*(?:第([零〇○Ｏ０一二三四五六七八九十百千万\d]+)(章|回)(?:[:：]|\s+)?\s*(.*)|Chapter\s+(\d+|[IVXLCDM]+)[.:]?\s*(.*))$/i;
+const NUMBERED_HEADING = /^#{0,6}\s*(?:第([零〇○Ｏ０一二三四五六七八九十百千万\d]+)(章|回)(?:[:：]|\s+)?\s*(.*)|Chapter\s+(\d+|[IVXLCDM]+)[.:]?\s*(.*)|Chương\s+(\d+|[IVXLCDM]+)(?![A-Za-z\u00C0-\u1EF9])[.:]?\s*(.*))$/i;
 
 /** Numbered document syntax shared by persistence, export and import. */
-export function readChapterHeading(line: string): {number:number;title:string;language:'zh'|'en'} | undefined {
+export function readChapterHeading(line: string): {number:number;title:string;language:'zh'|'en'|'vi'} | undefined {
   const match=NUMBERED_HEADING.exec(line.trim());
   if(!match)return undefined;
-  const ordinal=match[1]??match[4]!;
+  const ordinal=match[1]??match[4]??match[6]!;
   let number=Number(ordinal);
   if(!Number.isFinite(number)){
-    if(match[4]){
+    if(match[4]||match[6]){
       const values:Record<string,number>={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
       const digits=[...ordinal.toUpperCase()].map(c=>values[c]!);
       number=digits.reduce((sum,value,index)=>sum+(value<(digits[index+1]??0)?-value:value),0);
@@ -30,7 +30,7 @@ export function readChapterHeading(line: string): {number:number;title:string;la
     }
   }
   if(!Number.isSafeInteger(number)||number<0)return undefined;
-  return{number,title:(match[3]??match[5]??'').trim(),language:match[1]?'zh':'en'};
+  return{number,title:(match[3]??match[5]??match[7]??'').trim(),language:match[1]?'zh':match[6]?'vi':'en'};
 }
 
 /**
@@ -41,6 +41,7 @@ export function readChapterHeading(line: string): {number:number;title:string;la
  * - "第一回 xxxx" / "第1回 xxxx"
  * - "# 第1章 xxxx" / "## 第23章 xxxx"
  * - "CHAPTER I." / "CHAPTER II."
+ * - "Chương 1: xxxx" / "# Chương 2"
  *
  * Each match marks the start of a new chapter. Content between matches
  * belongs to the preceding chapter.
@@ -100,6 +101,10 @@ export function splitChapters(
 function inferFallbackTitle(headingLine: string, chapterNumber: number): string {
   if (/chapter\s+(?:\d+|[ivxlcdm]+)/i.test(headingLine)) {
     return `Chapter ${chapterNumber}`;
+  }
+
+  if (/chương\s+(?:\d+|[ivxlcdm]+)/i.test(headingLine)) {
+    return `Chương ${chapterNumber}`;
   }
 
   if (/第[零一二三四五六七八九十百千万\d]+回/.test(headingLine)) {

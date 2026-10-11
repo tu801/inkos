@@ -1,4 +1,5 @@
 import { BaseAgent } from "./base.js";
+import { languageOutputInstruction } from "../utils/language.js";
 import { StateValidationToolSchema } from "./state-validation-tool.js";
 import type { Observation } from "../models/observation.js";
 
@@ -32,14 +33,16 @@ export class StateValidatorAgent extends BaseAgent {
     newState: string,
     oldHooks: string,
     newHooks: string,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "en" | "vi" = "zh",
     authorityContext?: StateValidationAuthorityContext,
   ): Promise<ValidationResult> {
     if (oldState === newState && oldHooks === newHooks) {
       return { observations: [], consistent: true, reconciliationRequired: false };
     }
 
-    const langInstruction = language === "en"
+    const langInstruction = language === "vi"
+      ? languageOutputInstruction(language)
+      : language !== "zh"
       ? "Respond in English."
       : "用中文回答。";
 
@@ -75,7 +78,7 @@ ${chapterContent}`;
         ],
         {
           name: "submit_state_validation",
-          label: language === "en" ? "Submit state validation" : "提交状态对账",
+          label: language !== "zh" ? "Submit state validation" : "提交状态对账",
           description: "Submit whether state reconciliation is required and the concrete evidence.",
           parameters: StateValidationToolSchema,
           validate: result => {

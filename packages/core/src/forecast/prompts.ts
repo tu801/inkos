@@ -1,7 +1,8 @@
 // Bilingual prompt builders for the narrative forecast agent, organized the
 // same way as prompts/short-fiction.ts: each builder switches on language.
+import { withLanguageOutputInstruction } from "../utils/language.js";
 
-export type ForecastLanguage = "zh" | "en";
+export type ForecastLanguage = "zh" | "en" | "vi";
 
 export interface ForecastPromptInput {
   readonly contextMarkdown: string;
@@ -12,14 +13,14 @@ export interface ForecastPromptInput {
 }
 
 export function buildForecastSystemPrompt(language: ForecastLanguage): string {
-  return language === "en"
+  return withLanguageOutputInstruction(language, language !== "zh"
     ? "Project mutually isolated, non-canonical futures with the activated long-writing Skill. Preserve canon and surface conflicts as risks."
-    : "按已激活的长篇写作 Skill 推演相互隔离的非正史候选未来。保留正典，把冲突明确列为风险。";
+    : "按已激活的长篇写作 Skill 推演相互隔离的非正史候选未来。保留正典，把冲突明确列为风险。");
 }
 
 export function buildForecastUserPrompt(input: ForecastPromptInput, language: ForecastLanguage): string {
   const firstChapter = input.baseChapter + 1;
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       input.contextMarkdown,
       "",
@@ -48,7 +49,7 @@ export function buildForecastUserPrompt(input: ForecastPromptInput, language: Fo
 }
 
 export function buildForecastRepairPrompt(validationError: string, language: ForecastLanguage): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       `Your previous output failed validation: ${validationError}`,
       "Submit the corrected complete branch set through the result tool.",

@@ -1,5 +1,6 @@
 import { BaseAgent } from "./base.js";
 import { ReviserAgent } from "./reviser.js";
+import { withLanguageOutputInstruction } from "../utils/language.js";
 import { z } from "zod";
 import { Type, type Static } from "@sinclair/typebox";
 import {
@@ -61,7 +62,7 @@ export function measureShortFictionDraft(draft: ShortFictionBatchDraft, language
   const openingHookLength=countChapterLength(draft.openingHook??"",mode);
   return {title:draft.storyTitle,chapterCount:draft.chapters.length,
     totalLength:chapterLengths.reduce((total,chapter)=>total+chapter.length,openingHookLength),
-    unit:language==="en"?"words":"non-whitespace-characters",openingHookLength,chapterLengths};
+    unit:language!=="zh"?"words":"non-whitespace-characters",openingHookLength,chapterLengths};
 }
 
 export const ShortFictionBatchDraftSchema = z.object({
@@ -85,7 +86,7 @@ export interface ShortFictionSalesPackage {
 }
 
 export function renderShortFictionSalesPackage(sales: ShortFictionSalesPackage, language: ShortFictionLanguage): string {
-  const headings = language === "en"
+  const headings = language !== "zh"
     ? ["## Synopsis", "## Selling Points", "## Cover Prompt"]
     : ["## 简介", "## 卖点", "## 封面提示词"];
   return [`# ${sales.title}`, "", headings[0], "", sales.intro, "", headings[1], "",
@@ -168,7 +169,7 @@ export class ShortFictionOutlineAgent extends BaseAgent {
     return {
       storyTitle: response.result.storyTitle.trim(),
       rawContent: [response.result.planMarkdown.trim(), ...Array.from({length:input.chapterCount},(_,index) => (
-        `## ${input.language === "en" ? `Chapter ${index+1}` : `第${index+1}章`}\n\n${(response.result as Record<string,string>)[`chapter_${index+1}_plan`]!.trim()}`
+        `## ${input.language === "vi" ? `Chương ${index+1}` : input.language === "en" ? `Chapter ${index+1}` : `第${index+1}章`}\n\n${(response.result as Record<string,string>)[`chapter_${index+1}_plan`]!.trim()}`
       ))].join("\n\n"),
     };
   }
@@ -256,10 +257,10 @@ export class ShortFictionWriterAgent extends BaseAgent {
       }
       const otherChapters=draft.chapters.filter(item=>item.number!==chapter.number);
       const revised=await this.submitStructured([
-        {role:"system",content: input.language==="en"
-          ? "Use the activated Skill, user request and revision plan to revise the specified chapter. Submit its title and complete prose within the supplied length range. Express the revision as in-world actions and dialogue; keep editorial chapter references and review instructions in the plan, outside the story prose."
+        {role:"system",content: (input.language??"zh")!=="zh"
+          ? withLanguageOutputInstruction(input.language??"zh","Use the activated Skill, user request and revision plan to revise the specified chapter. Submit its title and complete prose within the supplied length range. Express the revision as in-world actions and dialogue; keep editorial chapter references and review instructions in the plan, outside the story prose.")
           : "按已激活的 Skill、用户修改要求与修订方案修改指定章节，提交本章标题和完整正文，并满足给定篇幅范围。把修改落实为故事中的行动与对白；章号引用、审稿意见和修改说明留在方案中，不写进故事正文。"},
-        {role:"user",content:JSON.stringify({storyTitle:input.draft.storyTitle,userRequest:input.direction,chapterNumber:chapter.number,currentLength:countChapterLength(chapterPlan.sourceNumber===0?"":chapter.content,resolveLengthCountingMode(input.language)),targetLength:input.charsPerChapter,minLength:input.minChapterLength,maxLength:input.maxChapterLength,lengthUnit:input.language==="en"?"words":"non-whitespace characters including punctuation",corrections:plan.revisionBrief,outline:plan.outlineMarkdown,instruction:chapterPlan.instruction,...(chapterPlan.sourceNumber!==undefined&&chapterPlan.sourceNumber!==chapter.number?{originalChapter}:{}),currentChapter:chapterPlan.sourceNumber===0?undefined:chapter,otherChapters})},
+        {role:"user",content:JSON.stringify({storyTitle:input.draft.storyTitle,userRequest:input.direction,chapterNumber:chapter.number,currentLength:countChapterLength(chapterPlan.sourceNumber===0?"":chapter.content,resolveLengthCountingMode(input.language)),targetLength:input.charsPerChapter,minLength:input.minChapterLength,maxLength:input.maxChapterLength,lengthUnit:(input.language??"zh")!=="zh"?"words":"non-whitespace characters including punctuation",corrections:plan.revisionBrief,outline:plan.outlineMarkdown,instruction:chapterPlan.instruction,...(chapterPlan.sourceNumber!==undefined&&chapterPlan.sourceNumber!==chapter.number?{originalChapter}:{}),currentChapter:chapterPlan.sourceNumber===0?undefined:chapter,otherChapters})},
       ],{name:"submit_short_revision_chapter",label:"Revise one chapter",description:`Submit the title and prose for chapter ${chapter.number}.`,parameters:ShortRevisionChapterToolSchema,
         validate:async(result)=>{
           const bound = {...result,storyTitle:input.draft.storyTitle,number:chapter.number};
@@ -606,7 +607,7 @@ export function validateShortFictionDraftForFinal(
 }
 
 function openingHookLengthContract(target:number,language:ShortFictionLanguage="zh") {
-  return {target,minimum:Math.max(1,Math.floor(target*0.75)),maximum:Math.ceil(target*1.25),unit:language==="en"?"words":"non-whitespace-characters"};
+  return {target,minimum:Math.max(1,Math.floor(target*0.75)),maximum:Math.ceil(target*1.25),unit:language!=="zh"?"words":"non-whitespace-characters"};
 }
 
 function validateOpeningHook(hook:string|undefined,target:number,language:ShortFictionLanguage="zh"):void {
@@ -635,7 +636,7 @@ export function renderShortFictionDraftMarkdown(
   draft: ShortFictionBatchDraft,
   language: ShortFictionLanguage = "zh",
 ): string {
-  const hookHeading = language === "en" ? "## Opening Hook" : "## 开篇钩子";
+  const hookHeading = language !== "zh" ? "## Opening Hook" : "## 开篇钩子";
   const completedChapters = draft.chapters.filter((chapter) => chapter.title.trim() && chapter.content.trim());
   return [
     `# ${draft.storyTitle}`,
@@ -655,7 +656,7 @@ export function formatShortFictionChapterHeading(
 ): string {
   const trimmed = title.trim();
   if (!trimmed) throw new Error(`Short-fiction chapter ${number} has no title.`);
-  return language === "en" ? `Chapter ${number}: ${trimmed}` : `第${number}章 ${trimmed}`;
+  return language === "vi" ? `Chương ${number}: ${trimmed}` : language === "en" ? `Chapter ${number}: ${trimmed}` : `第${number}章 ${trimmed}`;
 }
 
 // charsPerChapter is the language's native unit (zh chars / en words). The 2.2

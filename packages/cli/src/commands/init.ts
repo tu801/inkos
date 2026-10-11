@@ -3,26 +3,28 @@ import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { log, logError } from "../utils.js";
 import { initializeProjectDirectory } from "../project-bootstrap.js";
+import { normalizeWritingLanguage } from "@actalk/inkos-core";
 
 export const initCommand = new Command("init")
   .description("Initialize an InkOS project (current directory by default)")
   .argument("[name]", "Project name (creates subdirectory). Omit to init current directory.")
-  .option("--lang <language>", "Default writing language: zh (Chinese) or en (English)", "zh")
+  .option("--lang <language>", "Default writing language: zh (Chinese), en (English), or vi (Vietnamese)", "zh")
   .action(async (name: string | undefined, opts: { lang?: string }) => {
     const projectDir = name ? resolve(process.cwd(), name) : process.cwd();
 
     try {
+      const language = normalizeWritingLanguage(opts.lang) ?? "zh";
       await mkdir(projectDir, { recursive: true });
       await initializeProjectDirectory(projectDir, {
-        language: (opts.lang === "en" ? "en" : "zh"),
+        language,
         overwriteSupportFiles: true,
       });
 
       log(`Project initialized at ${projectDir}`);
       log("");
-      const isEnglish = (opts.lang ?? "zh") === "en";
+      const isEnglish = language !== "zh";
       const exampleCreateLines = isEnglish
-        ? ["  inkos book create --title 'My Novel' --genre progression --platform royalroad --lang en"]
+        ? [`  inkos book create --title 'My Novel' --genre progression --platform royalroad --lang ${language}`]
         : [
           "  inkos book create --title '我的小说' --genre xuanhuan --platform tomato",
           "  # English project? Re-run with: inkos init --lang en",

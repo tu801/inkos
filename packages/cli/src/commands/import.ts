@@ -95,7 +95,7 @@ importCommand
 
       const fromPath = resolve(opts.from);
       if (!opts.json) {
-        log(language === "en"
+        log(language !== "zh"
           ? `Reading chapters from "${fromPath}" for import into "${bookId}".`
           : `正在读取「${fromPath}」，准备导入到「${bookId}」。`);
         if (opts.resumeFrom) {

@@ -136,7 +136,7 @@ export function BookDetail({
 
   const handleRewrite = async (chapterNum: number) => {
     const brief = window.prompt(
-      data?.book.language === "en"
+      (data?.book.language ?? "zh") !== "zh"
         ? "Optional rewrite brief for this run only. Leave blank to use existing focus."
         : "可选：输入这次重写要遵循的补充想法。留空则沿用现有 focus。",
       "",
@@ -159,7 +159,7 @@ export function BookDetail({
 
   const handleRevise = async (chapterNum: number, mode: ReviseMode) => {
     const brief = window.prompt(
-      data?.book.language === "en"
+      (data?.book.language ?? "zh") !== "zh"
         ? "Optional revise brief for this run only. Leave blank to use existing focus."
         : "可选：输入这次修订要遵循的补充想法。留空则沿用现有 focus。",
       "",
@@ -182,7 +182,7 @@ export function BookDetail({
 
   const handleSync = async (chapterNum: number) => {
     const brief = window.prompt(
-      data?.book.language === "en"
+      (data?.book.language ?? "zh") !== "zh"
         ? "Optional sync brief for interpreting the edited chapter body. Leave blank to sync directly from the text."
         : "可选：输入这次同步时要遵循的补充说明。留空则直接按正文同步。",
       "",
@@ -238,7 +238,7 @@ export function BookDetail({
 
   const handleReviseFoundation = async () => {
     const feedback = window.prompt(
-      data?.book.language === "en"
+      (data?.book.language ?? "zh") !== "zh"
         ? "Foundation revision feedback. This rewrites the book foundation, not chapter body."
         : "输入重修基础设定的反馈。此操作会重写基础设定，不直接改正文。",
       "",
@@ -250,7 +250,7 @@ export function BookDetail({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ feedback }),
       });
-      return data?.book.language === "en" ? "Foundation revised." : "基础设定已重修。";
+      return (data?.book.language ?? "zh") !== "zh" ? "Foundation revised." : "基础设定已重修。";
     });
   };
 
@@ -295,6 +295,9 @@ export function BookDetail({
             <h1 className="text-4xl font-serif font-medium">{book.title}</h1>
             {book.language === "en" && (
               <span className="px-1.5 py-0.5 rounded border border-primary/20 text-primary text-[10px] font-bold">EN</span>
+            )}
+            {book.language === "vi" && (
+              <span className="px-1.5 py-0.5 rounded border border-primary/20 text-primary text-[10px] font-bold">VI</span>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground font-medium">
@@ -520,7 +523,7 @@ export function BookDetail({
                         onClick={() => handleSync(ch.number)}
                         disabled={syncingChapters.includes(ch.number) || ch.number !== latestPersistedChapter}
                         className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm disabled:opacity-50"
-                        title={data?.book.language === "en" ? "Sync truth/state from edited chapter" : "根据已编辑章节同步 truth/state"}
+                        title={(data?.book.language ?? "zh") !== "zh" ? "Sync truth/state from edited chapter" : "根据已编辑章节同步 truth/state"}
                       >
                         {syncingChapters.includes(ch.number)
                           ? <div className="w-3.5 h-3.5 border-2 border-muted-foreground/20 border-t-muted-foreground rounded-full animate-spin" />

@@ -31,7 +31,7 @@ fanficCommand
   .option("--platform <platform>", "Target platform", "other")
   .option("--target-chapters <n>", "Target chapter count", "100")
   .option("--chapter-words <n>", "Words per chapter", "3000")
-  .option("--lang <language>", "Writing language: zh or en. Defaults from the project.")
+  .option("--lang <language>", "Writing language: zh, en, or vi. Defaults from the project.")
   .option("--json", "Output JSON")
   .action(async (opts) => {
     try {

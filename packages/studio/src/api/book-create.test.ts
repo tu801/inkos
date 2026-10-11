@@ -51,6 +51,22 @@ describe("buildStudioBookConfig", () => {
     expect(config.language).toBe("en");
     expect(config.id).toBe("english-book");
   });
+
+  it("creates Vietnamese books without falling back to Chinese", () => {
+    const config = buildStudioBookConfig(
+      {
+        title: "Mưa Đêm Hà Nội",
+        genre: "literary",
+        platform: "other",
+        language: "vi",
+      },
+      "2026-10-11T00:00:00.000Z",
+    );
+
+    expect(config.language).toBe("vi");
+    expect(config.chapterWordCount).toBe(2000);
+    expect(config.id).toBe("mua-dem-ha-noi");
+  });
 });
 
 describe("waitForStudioBookReady", () => {

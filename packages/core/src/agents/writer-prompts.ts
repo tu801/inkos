@@ -2,6 +2,7 @@ import type { BookConfig } from "../models/book.js";
 import type { BookRules } from "../models/book-rules.js";
 import type { LengthSpec } from "../models/length-governance.js";
 import { buildLengthSpec } from "../utils/length-metrics.js";
+import { languageOutputInstruction, promptBaseLanguage, type WritingLanguage } from "../utils/language.js";
 
 /** Writer protocol. Narrative craft comes from the active long-writing Skill. */
 export function buildWriterSystemPrompt(
@@ -9,12 +10,13 @@ export function buildWriterSystemPrompt(
   bookRules: BookRules | null,
   bookRulesBody: string,
   styleGuide: string,
-  languageOverride?: "zh" | "en",
+  languageOverride?: WritingLanguage,
   lengthSpec?: LengthSpec,
 ): string {
   const language = languageOverride ?? book.language;
+  const baseLanguage = promptBaseLanguage(language);
   const resolvedLength = lengthSpec ?? buildLengthSpec(book.chapterWordCount, language);
-  const sections = language === "en"
+  const sections = baseLanguage === "en"
     ? [
         `Write one chapter for the active ${book.genre} Work on ${book.platform} using the activated professional Skills.`,
         governedContract("en"),
@@ -33,7 +35,7 @@ export function buildWriterSystemPrompt(
         authorityBlock("本书规则", bookRulesBody),
         authorityBlock("文风指南", styleGuide),
       ];
-  return sections.filter(Boolean).join("\n\n");
+  return [languageOutputInstruction(language), ...sections].filter(Boolean).join("\n\n");
 }
 
 function governedContract(language: "zh" | "en"): string {
