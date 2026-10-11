@@ -417,9 +417,18 @@ export class ComposerAgent extends BaseAgent {
   }
 
   async selectOutlineSections(request: OutlineSectionSelectionRequest): Promise<ReadonlyArray<string>> {
+<<<<<<< HEAD
     if (request.candidates.length <= 1) return request.candidates.map((candidate) => candidate.source);
     const candidates = request.candidates.map((candidate) => [
       `source_id: ${candidate.source}`,
+=======
+    if (request.candidates.length <= 1) {
+      return request.candidates.map((candidate) => candidate.source);
+    }
+    const isEn = request.language !== "zh";
+    const candidates = request.candidates.map((candidate, index) => [
+      `#${index + 1} ${candidate.source}`,
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
       `heading: ${candidate.heading}`,
       candidate.excerpt,
     ].join("\n")).join("\n\n");
@@ -488,6 +497,7 @@ export class ComposerAgent extends BaseAgent {
     return result.selectedIndices.map(index=>allowedIds[index-1]!);
   }
   async compileCompressibleContext(request: CompressibleContextCompileRequest): Promise<string> {
+<<<<<<< HEAD
     const fragments: ContextFragment[] = request.compressibleEntries.map((entry, index) => ({
       id: `chapter-${request.chapterNumber}-compressible-${index + 1}`,
       source: entry.source,
@@ -501,6 +511,52 @@ export class ComposerAgent extends BaseAgent {
       maxTokens: request.maxInputTokens,
       fragments,
       language: request.language,
+=======
+    const isEn = request.language !== "zh";
+    const protectedBlock = renderContextEntries(request.protectedEntries);
+    const compressibleBlock = renderContextEntries(request.compressibleEntries);
+    const system = isEn
+      ? [
+          "You are InkOS's semantic context compiler.",
+          "Only compile the COMPRESSIBLE CONTEXT. The PROTECTED CONTEXT is binding reference material and must not be rewritten, summarized as a substitute, or weakened.",
+          "Output concise Markdown with source pointers. Preserve names, unresolved promises, evidence, timing, and constraints that may affect the next chapter. Drop low-relevance noise.",
+        ].join("\n")
+      : [
+          "你是 InkOS 的语义上下文编译器。",
+          "只能编译【可压缩上下文】。【受保护上下文】是绑定参照，不得改写、不得替代总结、不得削弱。",
+          "输出简洁 Markdown，保留来源指针。保留会影响下一章的人名、未兑现承诺、证据、时间点和约束，丢弃低相关噪声。",
+        ].join("\n");
+    const user = isEn
+      ? [
+          `Chapter: ${request.chapterNumber}`,
+          `Goal: ${request.goal}`,
+          `Target budget for compiled context: <= ${request.maxInputTokens} estimated input tokens`,
+          "",
+          "## Protected Context (reference only, do not compile)",
+          protectedBlock || "(none)",
+          "",
+          "## Compressible Context (compile this)",
+          compressibleBlock || "(none)",
+        ].join("\n")
+      : [
+          `章节：第${request.chapterNumber}章`,
+          `目标：${request.goal}`,
+          `压缩后目标预算：不超过 ${request.maxInputTokens} 估算输入 tokens`,
+          "",
+          "## 受保护上下文（只作为参照，不要编译它）",
+          protectedBlock || "（无）",
+          "",
+          "## 可压缩上下文（只编译这一部分）",
+          compressibleBlock || "（无）",
+        ].join("\n");
+
+    const response = await this.chat([
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ], {
+      temperature: 0.2,
+      maxTokens: Math.min(8192, Math.max(512, request.maxInputTokens)),
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     });
     return result.content;
   }
@@ -844,7 +900,10 @@ async function buildReferencedHookEntries(
       readonly expectedPayoff: string;
       readonly notes: string;
     }>,
+<<<<<<< HEAD
   summaries: MemorySelection["lookupSummaries"],
+=======
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   language: "zh" | "en" | "vi",
 ): Promise<ContextPackage["selectedContext"]> {
     const targetHookIds = [...new Set(plan.memo.threadRefs)];
@@ -860,8 +919,13 @@ async function buildReferencedHookEntries(
 
       const seedSummary = findHookSummary(summaries, hook.hookId, hook.startChapter, "seed");
       const latestSummary = findHookSummary(summaries, hook.hookId, hook.lastAdvancedChapter, "latest");
+<<<<<<< HEAD
       const role = language === "en" ? "memo-referenced hook" : "备忘引用伏笔";
       const promise = hook.expectedPayoff || (language === "en" ? "(unspecified)" : "（未写明）");
+=======
+      const role = language !== "zh" ? "memo-referenced debt" : "备忘引用旧债";
+      const promise = hook.expectedPayoff || (language !== "zh" ? "(unspecified)" : "（未写明）");
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
       const seedBeat = seedSummary
         ? renderHookTraceBeat(seedSummary)
         : (hook.notes || promise);
@@ -870,11 +934,19 @@ async function buildReferencedHookEntries(
         : undefined;
 
       return [{
+<<<<<<< HEAD
         source: `runtime/referenced_hook#${hook.hookId}`,
         reason: language === "en"
           ? "Traceable history for a hook referenced by the chapter memo."
           : "章节备忘引用伏笔的可追溯历史。",
         excerpt: language === "en"
+=======
+        source: `runtime/hook_debt#${hook.hookId}`,
+        reason: language !== "zh"
+          ? "Narrative debt brief with original seed text for this hook agenda target."
+          : "含原始种子文本的叙事债务简报。",
+        excerpt: language !== "zh"
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
           ? [
               `${hook.hookId} (${hook.type}, ${role}, status=${hook.status})`,
               `reader promise: ${promise}`,

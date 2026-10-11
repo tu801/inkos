@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { access, readFile, rm } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { join, resolve } from "node:path";
+<<<<<<< HEAD
 import {
   createBookFoundationTool,
   deriveBookIdFromTitle,
@@ -13,6 +14,9 @@ import {
   workDirectory,
   type BookConfig,
 } from "@actalk/inkos-core";
+=======
+import { bootstrapStructuredStateFromMarkdown, defaultChapterLength, deriveBookIdFromTitle, normalizePlatformOrOther, normalizeWritingLanguage, PipelineRunner, StateManager, type BookConfig } from "@actalk/inkos-core";
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 import {
   formatBookBackupCreated,
   formatBookBackupListEmpty,
@@ -37,9 +41,13 @@ bookCommand
   .option("--genre <genre>", "Genre", "xuanhuan")
   .option("--platform <platform>", "Target platform", "tomato")
   .option("--target-chapters <n>", "Target chapter count", "200")
-  .option("--chapter-words <n>", "Words per chapter", "3000")
+  .option("--chapter-words <n>", "Words/characters per chapter (defaults by language)")
   .option("--brief <path>", "Path to creative brief file (.md/.txt) — Architect builds from your ideas instead of generating from scratch")
+<<<<<<< HEAD
   .option("--lang <language>", "Writing language: zh (Chinese), en (English), or vi (Vietnamese).")
+=======
+  .option("--lang <language>", "Writing language: zh (Chinese), en (English), or vi (Vietnamese). Defaults from genre.")
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   .option("--json", "Output JSON")
   .action(async (opts) => {
     try {
@@ -61,6 +69,11 @@ bookCommand
       }
 
       const config = await loadConfig();
+      const requestedLanguage = opts.lang ? normalizeWritingLanguage(opts.lang) : undefined;
+      if (opts.lang && !requestedLanguage) {
+        throw new Error(`Unsupported writing language: ${opts.lang}. Expected zh, en, or vi.`);
+      }
+      const writingLanguage = requestedLanguage ?? config.language;
       const now = new Date().toISOString();
       const book: BookConfig = {
         id: bookId,
@@ -69,8 +82,15 @@ bookCommand
         genre: opts.genre,
         status: "outlining",
         targetChapters: parseInt(opts.targetChapters, 10),
+<<<<<<< HEAD
         chapterWordCount: parseInt(opts.chapterWords, 10),
         language: resolveCliLanguage(opts.lang ?? config.language),
+=======
+        chapterWordCount: opts.chapterWords
+          ? parseInt(opts.chapterWords, 10)
+          : defaultChapterLength(writingLanguage),
+        language: writingLanguage,
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
         createdAt: now,
         updatedAt: now,
       };
@@ -161,7 +181,11 @@ bookCommand
       if (opts.status) updates.status = opts.status;
       if (opts.lang) {
         const language = normalizeWritingLanguage(opts.lang);
+<<<<<<< HEAD
         if (!language) throw new Error(`Unsupported writing language: ${opts.lang}`);
+=======
+        if (!language) throw new Error(`Unsupported writing language: ${opts.lang}. Expected zh, en, or vi.`);
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
         updates.language = language;
       }
 
@@ -184,6 +208,9 @@ bookCommand
         updatedAt: new Date().toISOString(),
       };
       await state.saveBookConfig(bookId, updated);
+      if (updates.language) {
+        await bootstrapStructuredStateFromMarkdown({ bookDir: state.bookDir(bookId) });
+      }
 
       if (opts.json) {
         log(JSON.stringify(updated, null, 2));

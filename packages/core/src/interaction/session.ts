@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ExecutionStateSchema } from "./events.js";
 import { assertSafeBookId, isSafeBookId } from "../utils/book-id.js";
+import { WritingLanguageSchema } from "../utils/language.js";
 
 export const SessionKindSchema = z.enum(["chat", "work", "book-create", "book", "short", "play", "script", "storyboard", "interactive-film", "edit", "interactive-film-authoring"]);
 export type SessionKind = z.infer<typeof SessionKindSchema>;
@@ -67,6 +68,45 @@ export const InteractionMessageSchema = z.object({
 
 export type InteractionMessage = z.infer<typeof InteractionMessageSchema>;
 
+<<<<<<< HEAD
+=======
+export const BookCreationDraftSchema = z.object({
+  concept: z.string().min(1),
+  title: z.string().min(1).optional(),
+  genre: z.string().min(1).optional(),
+  platform: z.string().min(1).optional(),
+  language: WritingLanguageSchema.optional(),
+  targetChapters: z.number().int().min(1).optional(),
+  chapterWordCount: z.number().int().min(1).optional(),
+  blurb: z.string().min(1).optional(),
+  worldPremise: z.string().min(1).optional(),
+  settingNotes: z.string().min(1).optional(),
+  protagonist: z.string().min(1).optional(),
+  supportingCast: z.string().min(1).optional(),
+  conflictCore: z.string().min(1).optional(),
+  volumeOutline: z.string().min(1).optional(),
+  constraints: z.string().min(1).optional(),
+  authorIntent: z.string().min(1).optional(),
+  currentFocus: z.string().min(1).optional(),
+  nextQuestion: z.string().min(1).optional(),
+  missingFields: z.array(z.string().min(1)).default([]),
+  readyToCreate: z.boolean().default(false),
+});
+
+export type BookCreationDraft = z.infer<typeof BookCreationDraftSchema>;
+
+export const DraftRoundSchema = z.object({
+  roundId: z.number().int().min(1),
+  userMessage: z.string(),
+  assistantRaw: z.string(),
+  fieldsUpdated: z.array(z.string()).default([]),
+  summary: z.string().default(""),
+  timestamp: z.number().int().nonnegative(),
+});
+
+export type DraftRound = z.infer<typeof DraftRoundSchema>;
+
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 export const InteractionSessionSchema = z.object({
   sessionId: z.string().min(1),
   projectRoot: z.string().min(1),

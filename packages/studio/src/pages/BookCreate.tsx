@@ -111,10 +111,13 @@ export function defaultChapterWordsForLanguage(language: "zh" | "en" | "vi"): st
   return language === "zh" ? "3000" : "2000";
 }
 
+<<<<<<< HEAD
 export function platformOptionsForLanguage(language: "zh" | "en" | "vi"): ReadonlyArray<PlatformOption> {
   return language === "zh" ? PLATFORMS_ZH : PLATFORMS_EN;
 }
 
+=======
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 export function defaultBookCreateForm(language: "zh" | "en" | "vi"): BookCreateFormState {
   return {
     title: "",
@@ -126,6 +129,13 @@ export function defaultBookCreateForm(language: "zh" | "en" | "vi"): BookCreateF
   };
 }
 
+<<<<<<< HEAD
+=======
+export function platformOptionsForLanguage(language: "zh" | "en" | "vi"): ReadonlyArray<PlatformOption> {
+  return language === "zh" ? PLATFORMS_ZH : PLATFORMS_EN;
+}
+
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 function parsePositiveInteger(value: string): number | null {
   const parsed = Number.parseInt(value.trim(), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
@@ -142,7 +152,14 @@ export function isBookCreateFormReady(form: BookCreateFormState): boolean {
   );
 }
 
+<<<<<<< HEAD
 export function buildBookCreatePayload(form: BookCreateFormState, language: "zh" | "en" | "vi"): BookCreatePayload {
+=======
+export function buildBookCreatePayload(
+  form: BookCreateFormState,
+  language: "zh" | "en" | "vi",
+): BookCreatePayload {
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   const targetChapters = parsePositiveInteger(form.targetChapters);
   const chapterWordCount = parsePositiveInteger(form.chapterWordCount);
   if (!targetChapters || !chapterWordCount || !isBookCreateFormReady(form)) {
@@ -159,6 +176,167 @@ export function buildBookCreatePayload(form: BookCreateFormState, language: "zh"
   };
 }
 
+<<<<<<< HEAD
+=======
+export function resolveDraftInstruction(input: string, _hasDraft: boolean): string {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return trimmed;
+}
+
+// The story core that must be present to create. Length
+// (targetChapters/chapterWordCount) is a run parameter with editable defaults,
+// so it never gates creation — it's only shown in the basics stage. Mirrors
+// missingCoreDraftFields in core/interaction/project-tools.ts.
+export function canCreateFromDraft(draft?: BookCreationDraft): boolean {
+  if (!draft) {
+    return false;
+  }
+  return Boolean(
+    draft.title?.trim()
+      && draft.genre?.trim()
+      && draft.platform?.trim()
+      && draft.worldPremise?.trim()
+      && draft.protagonist?.trim()
+      && draft.conflictCore?.trim(),
+  );
+}
+
+const DRAFT_STAGE_LABELS: Record<"zh" | "en", Record<string, string>> = {
+  zh: {
+    basic: "基础信息",
+    world: "世界观与规则",
+    characters: "主角与角色",
+    conflict: "冲突与回报",
+    structure: "结构与写作约束",
+    title: "书名",
+    genre: "题材",
+    platform: "平台",
+    language: "语言",
+    targetChapters: "目标章数",
+    chapterWordCount: "每章字数",
+    worldPremise: "世界观",
+    settingNotes: "设定补充",
+    protagonist: "主角",
+    supportingCast: "配角",
+    conflictCore: "核心冲突",
+    blurb: "简介",
+    authorIntent: "作者意图",
+    volumeOutline: "卷纲方向",
+    currentFocus: "当前重点",
+    constraints: "写作约束",
+  },
+  en: {
+    basic: "Basics",
+    world: "World & Rules",
+    characters: "Protagonist & Cast",
+    conflict: "Conflict & Payoff",
+    structure: "Structure & Constraints",
+    title: "Title",
+    genre: "Genre",
+    platform: "Platform",
+    language: "Language",
+    targetChapters: "Target Chapters",
+    chapterWordCount: "Words per Chapter",
+    worldPremise: "World",
+    settingNotes: "Setting Notes",
+    protagonist: "Protagonist",
+    supportingCast: "Supporting Cast",
+    conflictCore: "Core Conflict",
+    blurb: "Blurb",
+    authorIntent: "Author Intent",
+    volumeOutline: "Volume Direction",
+    currentFocus: "Current Focus",
+    constraints: "Constraints",
+  },
+};
+
+const DRAFT_STAGE_FIELDS: ReadonlyArray<{
+  readonly key: string;
+  readonly fields: ReadonlyArray<keyof BookCreationDraft>;
+}> = [
+  { key: "basic", fields: ["title", "genre", "platform", "targetChapters", "chapterWordCount", "language"] },
+  { key: "world", fields: ["worldPremise", "settingNotes"] },
+  { key: "characters", fields: ["protagonist", "supportingCast"] },
+  { key: "conflict", fields: ["conflictCore", "blurb", "authorIntent"] },
+  { key: "structure", fields: ["volumeOutline", "currentFocus", "constraints"] },
+];
+
+function draftValueAsText(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+}
+
+export function buildCreationDraftStages(
+  draft: BookCreationDraft,
+  language: "zh" | "en" | "vi",
+): ReadonlyArray<DraftSummaryStage> {
+  const labels = DRAFT_STAGE_LABELS[language === "zh" ? "zh" : "en"];
+  const missingSet = new Set(draft.missingFields ?? []);
+
+  return DRAFT_STAGE_FIELDS.map((stage) => {
+    const rows: DraftSummaryRow[] = [];
+    for (const field of stage.fields) {
+      const value = draftValueAsText(draft[field]);
+      if (value) {
+        rows.push({ key: String(field), label: labels[field] ?? String(field), value });
+      }
+    }
+    const missing = stage.fields
+      .filter((field) => missingSet.has(field))
+      .map((field) => labels[field] ?? String(field));
+    const status = rows.length === 0
+      ? "missing"
+      : missing.length > 0
+        ? "partial"
+        : "complete";
+
+    return {
+      key: stage.key,
+      label: labels[stage.key] ?? stage.key,
+      status,
+      rows,
+      missing,
+    };
+  });
+}
+
+export function buildCreationDraftSummary(
+  draft: BookCreationDraft,
+  language: "zh" | "en" | "vi",
+): ReadonlyArray<DraftSummaryRow> {
+  const rows = language !== "zh"
+    ? [
+        draft.title ? { key: "title", label: "Title", value: draft.title } : undefined,
+        draft.worldPremise ? { key: "worldPremise", label: "World", value: draft.worldPremise } : undefined,
+        draft.protagonist ? { key: "protagonist", label: "Protagonist", value: draft.protagonist } : undefined,
+        draft.conflictCore ? { key: "conflictCore", label: "Core Conflict", value: draft.conflictCore } : undefined,
+        draft.volumeOutline ? { key: "volumeOutline", label: "Volume Direction", value: draft.volumeOutline } : undefined,
+        draft.blurb ? { key: "blurb", label: "Blurb", value: draft.blurb } : undefined,
+        draft.nextQuestion ? { key: "nextQuestion", label: "Next", value: draft.nextQuestion } : undefined,
+      ]
+    : [
+        draft.title ? { key: "title", label: "书名", value: draft.title } : undefined,
+        draft.worldPremise ? { key: "worldPremise", label: "世界观", value: draft.worldPremise } : undefined,
+        draft.protagonist ? { key: "protagonist", label: "主角", value: draft.protagonist } : undefined,
+        draft.conflictCore ? { key: "conflictCore", label: "核心冲突", value: draft.conflictCore } : undefined,
+        draft.volumeOutline ? { key: "volumeOutline", label: "卷纲方向", value: draft.volumeOutline } : undefined,
+        draft.blurb ? { key: "blurb", label: "简介", value: draft.blurb } : undefined,
+        draft.nextQuestion ? { key: "nextQuestion", label: "下一步", value: draft.nextQuestion } : undefined,
+      ];
+
+  return rows.filter((row): row is DraftSummaryRow => Boolean(row));
+}
+
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 interface WaitForBookReadyOptions {
   readonly fetchBook?: (bookId: string) => Promise<unknown>;
   readonly fetchStatus?: (bookId: string) => Promise<{ status: string; error?: string }>;
@@ -201,8 +379,14 @@ export async function waitForBookReady(bookId: string, options: WaitForBookReady
 export function BookCreate({ nav, theme, t: _t }: { nav: Nav; theme: Theme; t: TFunction }) {
   const c = useColors(theme);
   const { data: project } = useApi<{ language: string }>("/project");
+<<<<<<< HEAD
   const projectLang = project?.language === "en" || project?.language === "vi" ? project.language : "zh";
   const copy = PAGE_COPY[projectLang === "zh" ? "zh" : "en"];
+=======
+  const projectLang = (project?.language === "en" || project?.language === "vi" ? project.language : "zh") as "zh" | "en" | "vi";
+  const uiLang = projectLang === "zh" ? "zh" : "en";
+  const copy = PAGE_COPY[uiLang];
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   const platformChoices = platformOptionsForLanguage(projectLang);
   const [form, setForm] = useState<BookCreateFormState>(() => defaultBookCreateForm(projectLang));
   const [creating, setCreating] = useState(false);

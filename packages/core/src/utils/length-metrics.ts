@@ -1,7 +1,18 @@
+<<<<<<< HEAD
 import type { LengthCountingMode, LengthSpec } from "../models/length-governance.js";
 import type { WritingLanguage } from "./language.js";
 
 export type LengthLanguage = WritingLanguage;
+=======
+import type { LengthCountingMode, LengthNormalizeMode, LengthSpec } from "../models/length-governance.js";
+import type { WritingLanguage } from "./language.js";
+
+export type LengthLanguage = WritingLanguage;
+
+const REFERENCE_TARGET = 2200;
+const SOFT_RANGE_DELTA = 300;
+const HARD_RANGE_DELTA = 600;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
 // Per-chapter length default in the book's native unit: Chinese counts characters (3000字),
 // English counts words (~2000 ≈ a 3000-char chapter). One cross-language number would mis-scale —
@@ -11,7 +22,12 @@ export const DEFAULT_CHAPTER_LENGTH_EN = 2000;
 export const DEFAULT_CHAPTER_LENGTH_VI = 2000;
 
 export function defaultChapterLength(language: LengthLanguage = "zh"): number {
+<<<<<<< HEAD
   return language === "zh" ? DEFAULT_CHAPTER_LENGTH_ZH : language === "vi" ? DEFAULT_CHAPTER_LENGTH_VI : DEFAULT_CHAPTER_LENGTH_EN;
+=======
+  if (language === "zh") return DEFAULT_CHAPTER_LENGTH_ZH;
+  return language === "vi" ? DEFAULT_CHAPTER_LENGTH_VI : DEFAULT_CHAPTER_LENGTH_EN;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 }
 
 export function countChapterLength(
@@ -26,7 +42,11 @@ export function countChapterLength(
   }
 
   if (countingMode === "vi_words") {
+<<<<<<< HEAD
     const words = normalized.match(/[\p{L}\p{M}\p{N}]+(?:['’][\p{L}\p{M}\p{N}]+)*/gu);
+=======
+    const words = normalized.match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu);
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     return words?.length ?? 0;
   }
 

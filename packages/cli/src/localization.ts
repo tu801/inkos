@@ -1,6 +1,15 @@
 import { formatLengthCount, resolveLengthCountingMode, type Observation } from "@actalk/inkos-core";
 
 export type CliLanguage = "zh" | "en" | "vi";
+<<<<<<< HEAD
+=======
+
+type WriteIssue = {
+  readonly severity: string;
+  readonly category: string;
+  readonly description: string;
+};
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
 type WriteResultShape = {
   readonly chapterNumber: number;
@@ -17,7 +26,11 @@ type ImportResultShape = {
 };
 
 function localize(language: CliLanguage, messages: { zh: string; en: string }): string {
+<<<<<<< HEAD
   return language !== "zh" ? messages.en : messages.zh;
+=======
+  return language === "zh" ? messages.zh : messages.en;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 }
 
 function normalizeCliLanguageTag(value: string | undefined): CliLanguage | undefined {
@@ -28,6 +41,9 @@ function normalizeCliLanguageTag(value: string | undefined): CliLanguage | undef
   const normalized = value.trim().toLowerCase();
   if (normalized.startsWith("en")) {
     return "en";
+  }
+  if (normalized.startsWith("vi")) {
+    return "vi";
   }
   if (normalized.startsWith("zh")) {
     return "zh";

@@ -31,12 +31,20 @@ export type PlayTranscriptTurn = z.infer<typeof PlayTranscriptTurnSchema>;
 const PlayWorldSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
+<<<<<<< HEAD
   premise: z.string(),
   worldContract: z.string(),
   visualContract: z.string(),
   mode: z.enum(["open", "guided"]),
   choiceCount:z.number().int().positive().optional(),
   language: z.enum(["zh", "en", "vi"]),
+=======
+  premise: z.string().default(""),
+  worldContract: z.string().default(""),
+  visualContract: z.string().default(""),
+  mode: z.enum(["open", "guided"]).default("open"),
+  language: z.enum(["zh", "en", "vi"]).default("zh"),
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
 }).strict();

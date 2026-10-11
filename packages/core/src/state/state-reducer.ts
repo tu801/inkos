@@ -143,6 +143,10 @@ function mergeHookRecord(existing: HookRecord, incoming: HookRecord): HookRecord
 
 function applyFactOps(
   currentState: CurrentStateState,
+<<<<<<< HEAD
+=======
+  language: "zh" | "en" | "vi",
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   delta: RuntimeStateDelta,
 ): CurrentStateState {
   const nextFacts = currentState.facts.map((fact) => ({ ...fact }));
@@ -162,11 +166,31 @@ function applyFactOps(
     }
   }
 
+<<<<<<< HEAD
   for (const input of delta.factOps.upsert) {
     const fact = {
       subject: input.subject.trim(),
       predicate: input.predicate.trim(),
       object: input.object.trim(),
+=======
+  const nextFacts = [...currentState.facts];
+  const labels = language !== "zh"
+    ? {
+      currentLocation: ["Current Location", "当前位置"],
+      protagonistState: ["Protagonist State", "主角状态"],
+      currentGoal: ["Current Goal", "当前目标"],
+      currentConstraint: ["Current Constraint", "当前限制"],
+      currentAlliances: ["Current Alliances", "Current Relationships", "当前敌我"],
+      currentConflict: ["Current Conflict", "当前冲突"],
+    }
+    : {
+      currentLocation: ["当前位置", "Current Location"],
+      protagonistState: ["主角状态", "Protagonist State"],
+      currentGoal: ["当前目标", "Current Goal"],
+      currentConstraint: ["当前限制", "Current Constraint"],
+      currentAlliances: ["当前敌我", "Current Alliances", "Current Relationships"],
+      currentConflict: ["当前冲突", "Current Conflict"],
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     };
     const exact = nextFacts.some((candidate) => active(candidate) && sameKey(candidate, fact));
     if (exact) continue;

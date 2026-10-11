@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, resolve, basename } from "node:path";
+<<<<<<< HEAD
 import {
   createFanficBookTool,
   createRefreshFanficCanonTool,
@@ -12,6 +13,10 @@ import {
   type FanficMode,
 } from "@actalk/inkos-core";
 import { loadConfig, buildPipelineConfig, findProjectRoot, resolveBookId, log, logError, resolveCliProfileSkills } from "../utils.js";
+=======
+import { defaultChapterLength, deriveBookIdFromTitle, normalizePlatformOrOther, normalizeWritingLanguage, PipelineRunner, type BookConfig, type FanficMode } from "@actalk/inkos-core";
+import { loadConfig, buildPipelineConfig, findProjectRoot, resolveBookId, log, logError } from "../utils.js";
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 import {
   formatFanficCanonMissingError,
   formatFanficSourceDirEmptyError,
@@ -30,8 +35,13 @@ fanficCommand
   .option("--genre <genre>", "Genre", "other")
   .option("--platform <platform>", "Target platform", "other")
   .option("--target-chapters <n>", "Target chapter count", "100")
+<<<<<<< HEAD
   .option("--chapter-words <n>", "Words per chapter", "3000")
   .option("--lang <language>", "Writing language: zh or en. Defaults from the project.")
+=======
+  .option("--chapter-words <n>", "Words/characters per chapter (language-native default)")
+  .option("--lang <language>", "Writing language: zh, en, or vi. Defaults from project.")
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   .option("--json", "Output JSON")
   .action(async (opts) => {
     try {
@@ -48,6 +58,8 @@ fanficCommand
       if (!sourceText.trim()) throw new Error("Fanfic source material is empty.");
 
       const bookId = deriveBookIdFromTitle(opts.title) || `book-${Date.now().toString(36)}`;
+      const language = normalizeWritingLanguage(opts.lang ?? config.language);
+      if (!language) throw new Error("lang must be zh, en, or vi.");
 
       const now = new Date().toISOString();
       const book: BookConfig = {
@@ -57,8 +69,15 @@ fanficCommand
         genre: opts.genre,
         status: "outlining",
         targetChapters: parseInt(opts.targetChapters, 10),
+<<<<<<< HEAD
         chapterWordCount: parseInt(opts.chapterWords, 10),
         language: resolveCliLanguage(opts.lang ?? config.language),
+=======
+        chapterWordCount: opts.chapterWords === undefined
+          ? defaultChapterLength(language)
+          : parseInt(opts.chapterWords, 10),
+        language,
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
         createdAt: now,
         updatedAt: now,
         fanficMode: mode,

@@ -25,12 +25,56 @@ import { createBuiltInWorkProfileRegistry } from "../harness/builtin-profiles.js
 import { semanticInputBudget } from "../llm/semantic-input.js";
 import { SemanticContextCompilerAgent } from "../agents/semantic-context-compiler.js";
 
+<<<<<<< HEAD
 export interface PlayOpeningStateLike {
   readonly extract: (input: {
     readonly turn: number;
+=======
+export interface PlayActionInterpreterLike {
+  readonly interpret: (input: {
+    readonly input: string;
+    readonly sceneBrief: string;
+    readonly language?: "zh" | "en" | "vi";
+  }) => Promise<PlayActionIntentInput>;
+}
+
+export interface PlayWorldMutatorLike {
+  readonly proposeMutation: (input: {
+    readonly turn: number;
+    readonly input: string;
+    readonly action: PlayActionIntentInput;
+    readonly context: string;
+    readonly language?: "zh" | "en" | "vi";
+  }) => Promise<PlayMutationInput>;
+}
+
+export interface PlaySceneRendererLike {
+  readonly render: (input: {
+    readonly input: string;
+    readonly action: PlayActionIntentInput;
+    readonly mutationSummary: string;
+    readonly stateBrief: string;
+    readonly replayContext?: string;
+    readonly mode?: "open" | "guided";
+    readonly language?: "zh" | "en" | "vi";
+    readonly worldPremise?: string;
+  }) => Promise<PlaySceneRender>;
+}
+
+export interface PlaySceneReconcilerLike {
+  readonly reconcile: (input: {
+    readonly turn: number;
+    readonly input: string;
+    readonly action: PlayActionIntentInput;
+    readonly mutation: PlayMutationInput;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     readonly sceneText: string;
     readonly suggestedActions: readonly string[];
     readonly context: string;
+<<<<<<< HEAD
+=======
+    readonly stateBrief: string;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     readonly language?: "zh" | "en" | "vi";
     readonly worldPremise?: string;
   }) => Promise<PlayMutationInput>;
@@ -156,7 +200,7 @@ export class PlayRunner {
     const language = world.language;
     const action: PlayActionIntent = {
       actionKind: "look",
-      intent: language === "en" ? "Seed the opening state for the first playable scene." : "播种第一幕已成立的开场状态。",
+      intent: language !== "zh" ? "Seed the opening state for the first playable scene." : "播种第一幕已成立的开场状态。",
       manner: "",
       risk: "",
       ambiguity: "",
@@ -221,6 +265,14 @@ export class PlayRunner {
     const world = await this.store.ensureWorldDefinition(this.options.worldId);
     const language = world.language;
     const sceneBrief = await this.readOptionalProjection("projections/scene.md");
+<<<<<<< HEAD
+=======
+    const action = PlayActionIntentSchema.parse(await this.actionInterpreter.interpret({
+      input: rawInput,
+      sceneBrief: sceneBrief || (language !== "zh" ? "A new turn begins; carry over the current world state." : "新回合开始，沿用当前世界状态。"),
+      language,
+    }));
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     const worldContext = renderPlayWorldContext(world, language);
     const context = await this.buildContextBrief(sceneBrief, language, world, rawInput);
     const turnResult = await this.turnAgent.run({
@@ -439,6 +491,7 @@ export class PlayRunner {
     };
   }
 
+<<<<<<< HEAD
   private async buildContextBrief(
     sceneBrief: string,
     language: "zh" | "en" | "vi",
@@ -447,6 +500,11 @@ export class PlayRunner {
   ): Promise<string> {
     const stateBrief = await this.readOptionalProjection("projections/state.md");
     const transcript = await this.store.readTranscript(this.options.worldId, this.options.runId);
+=======
+  private async buildContextBrief(sceneBrief: string, language: "zh" | "en" | "vi", world: PlayWorld | null): Promise<string> {
+    const stateBrief = await this.readOptionalProjection("projections/state.md");
+    const isEn = language !== "zh";
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     const worldContext = renderPlayWorldContext(world, language);
     const graph = readGraphSnapshot(this.db);
     const activeEdges = (graph?.edges ?? []).filter(edge => edge.validUntilEventId == null);
@@ -516,10 +574,38 @@ export class PlayRunner {
   }
 }
 
+<<<<<<< HEAD
 function isOpeningGraphReady(graph: PlayGraphSnapshot | null): boolean {
   if (!graph) return false;
   return graph.entities.some((entity) => entity.id === "actor_player")
     && graph.entities.some((entity) => entity.id !== "actor_player");
+=======
+function buildOpeningSeedInput(input: {
+  readonly sceneText: string;
+  readonly suggestedActions: readonly string[];
+  readonly language: "zh" | "en" | "vi";
+  readonly premise?: string;
+}): string {
+  const isEn = input.language !== "zh";
+  const lines = isEn
+    ? [
+        "Seed only the state that already exists at the opening of this playable world.",
+        "Do not advance time, do not solve the mystery, and do not narrate a new turn.",
+        "If the premise or opening scene says the player already holds, carries, keeps, wears, or starts with a tangible object, that object is already established: create its entity and add an actor_player holding edge. Do not hide held objects inside the player summary.",
+        input.premise ? `Premise:\n${input.premise}` : "",
+        `Opening scene:\n${input.sceneText}`,
+        input.suggestedActions.length > 0 ? `Suggested player actions:\n${input.suggestedActions.map((action) => `- ${action}`).join("\n")}` : "",
+      ]
+    : [
+        "只播种这个互动世界开场已经成立的状态。",
+        "不要推进时间，不要解谜，不要写新的回合剧情。",
+        "如果世界前提或开场正文说玩家已经拿着、带着、揣着、穿着、携带或开局拥有某个实物，这就是已成立状态：必须为该实物建立实体，并补一条 actor_player 指向它、value.role=\"holding\" 的持有边。不要把已持有实物只藏在玩家 summary 里。",
+        input.premise ? `世界前提：\n${input.premise}` : "",
+        `开场正文：\n${input.sceneText}`,
+        input.suggestedActions.length > 0 ? `建议动作：\n${input.suggestedActions.map((action) => `- ${action}`).join("\n")}` : "",
+      ];
+  return lines.filter(Boolean).join("\n\n");
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 }
 
 function buildReplayContext(input: {
@@ -591,12 +677,99 @@ function requireRestorableGraphDB(db: PlayReducerDB): PlayReducerDB & {
   };
 }
 
+<<<<<<< HEAD
 function renderEntity(entity: PlayEntity, language: "zh" | "en" | "vi"): string {
   const isEn = language !== "zh";
   const detail = [entity.summary, entity.status ? `${isEn ? "status" : "状态"}: ${entity.status}` : ""]
     .filter(Boolean)
     .join(isEn ? "; " : "；");
   return `${entity.id} [${entity.type}; ${isEn ? "description last updated" : "描述最后更新"}: ${entity.updatedEventId}]: ${entity.label}${detail ? ` — ${detail}` : ""}`;
+=======
+function mergePlayMutations(base: PlayMutation, supplement: PlayMutation): PlayMutation {
+  if (isEmptyMutationSupplement(supplement)) return base;
+  const summary = mergeMutationSummary(base.summary, supplement.summary);
+  return PlayMutationSchema.parse({
+    ...base,
+    summary,
+    entities: {
+      upsert: mergeById([...base.entities.upsert, ...supplement.entities.upsert]),
+    },
+    edges: {
+      upsert: mergeById([...base.edges.upsert, ...supplement.edges.upsert]),
+      expire: [...base.edges.expire, ...supplement.edges.expire],
+    },
+    stateSlots: {
+      upsert: mergeById([...base.stateSlots.upsert, ...supplement.stateSlots.upsert]),
+    },
+    evidence: {
+      transitions: [...base.evidence.transitions, ...supplement.evidence.transitions],
+    },
+    timeAdvance: base.timeAdvance ?? supplement.timeAdvance,
+    notes: [...base.notes, ...supplement.notes],
+  });
+}
+
+function mergeById<T extends { readonly id: string }>(items: ReadonlyArray<T>): T[] {
+  const order: string[] = [];
+  const byId = new Map<string, T>();
+  for (const item of items) {
+    if (!byId.has(item.id)) order.push(item.id);
+    byId.set(item.id, item);
+  }
+  return order.map((id) => byId.get(id)!);
+}
+
+function mergeMutationSummary(base: string, supplement: string): string {
+  const left = base.trim();
+  const right = supplement.trim();
+  if (!right) return left;
+  if (!left) return right;
+  const normalizedLeft = normalizeSummaryForDedupe(left);
+  const normalizedRight = normalizeSummaryForDedupe(right);
+  if (normalizedLeft === normalizedRight) return left;
+  if (normalizedLeft.includes(normalizedRight)) return left;
+  if (normalizedRight.includes(normalizedLeft)) return right;
+  return `${left}；${right}`;
+}
+
+function normalizeSummaryForDedupe(value: string): string {
+  return value
+    .replace(/[\s，,。.!！?？；;：:、"'“”‘’「」『』（）()[\]{}《》<>—\-…]+/g, "")
+    .toLowerCase();
+}
+
+function isEmptyMutationSupplement(mutation: PlayMutation): boolean {
+  return mutation.entities.upsert.length === 0
+    && mutation.edges.upsert.length === 0
+    && mutation.edges.expire.length === 0
+    && mutation.stateSlots.upsert.length === 0
+    && mutation.evidence.transitions.length === 0
+    && mutation.notes.length === 0
+    && !mutation.summary.trim()
+    && !mutation.blocked;
+}
+
+function renderEntityRoster(entities: ReadonlyArray<PlayEntity>, language: "zh" | "en" | "vi"): string {
+  if (entities.length === 0) {
+    return "";
+  }
+  const isEn = language !== "zh";
+  const header = isEn
+    ? "Current entity roster (reuse these ids; do not recreate the same person/thing):"
+    : "当前实体名册（复用这些 id；不要把同一个人/物换新 id 重建）：";
+  const lines = entities.slice(0, 40).map((entity) => {
+    const detail = [entity.summary, entity.status ? `${isEn ? "status" : "状态"}: ${entity.status}` : ""]
+      .filter(Boolean)
+      .join(isEn ? "; " : "；");
+    return `- ${entity.id} [${entity.type}]: ${entity.label}${detail ? ` — ${clampRosterText(detail)}` : ""}`;
+  });
+  return [header, ...lines].join("\n");
+}
+
+function clampRosterText(value: string): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  return compact.length > 120 ? `${compact.slice(0, 117)}...` : compact;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 }
 
 function renderStateBrief(input: {

@@ -12,7 +12,10 @@ import { renderChapterSummariesProjection, renderCurrentStateProjection, renderH
 import { applyRuntimeStateDelta, type RuntimeStateSnapshot } from "./state-reducer.js";
 import { validateRuntimeState } from "./state-validator.js";
 import { arbitrateRuntimeStateDeltaHooks } from "../utils/hook-arbiter.js";
+<<<<<<< HEAD
 import { commitAtomicFileSet } from "../utils/atomic-file-set.js";
+=======
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 import type { WritingLanguage } from "../utils/language.js";
 
 export interface RuntimeStateArtifacts {

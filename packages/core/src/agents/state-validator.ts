@@ -1,6 +1,15 @@
 import { BaseAgent } from "./base.js";
+<<<<<<< HEAD
 import { StateValidationToolSchema } from "./state-validation-tool.js";
 import type { Observation } from "../models/observation.js";
+=======
+import { languageOutputInstruction } from "../utils/language.js";
+
+export interface ValidationWarning {
+  readonly category: string;
+  readonly description: string;
+}
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
 export interface ValidationResult {
   readonly observations: ReadonlyArray<Observation>;
@@ -39,9 +48,13 @@ export class StateValidatorAgent extends BaseAgent {
       return { observations: [], consistent: true, reconciliationRequired: false };
     }
 
+<<<<<<< HEAD
     const langInstruction = language !== "zh"
       ? "Respond in English."
       : "用中文回答。";
+=======
+    const langInstruction = languageOutputInstruction(language) || "用中文回答。";
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
     const systemPrompt = `Validate the derived truth projection against the current chapter and supplied authority using the activated long-writing Skill. ${langInstruction}
 Do not rewrite the chapter or silently resolve contradictory sources. A hook marked superseded retains an explicitly withdrawn plan for history; its original premise is not active canon or a future promise. Verify its notes against the current withdrawal authority, rather than requiring that premise to occur in the chapter. Set reconciliationRequired=true only when a different truth projection can resolve the mismatch; a contradiction inside the chapter or between authorities remains a reported observation and does not authorize another settlement pass. Submit the Boolean decision and a concise Markdown report with concrete evidence through the validation tool. Use an empty report when there are no findings.`;

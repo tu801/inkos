@@ -3,6 +3,17 @@ import type {
   CurrentStateState,
   HooksState,
 } from "../models/runtime-state.js";
+<<<<<<< HEAD
+=======
+import {
+  localizeHookPayoffTiming,
+  resolveHookPayoffTiming,
+} from "../utils/hook-lifecycle.js";
+import {
+  computeHookDiagnostics,
+  renderHookDiagnosticMarker,
+} from "../utils/hook-stale-detection.js";
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 import type { WritingLanguage } from "../utils/language.js";
 
 export function renderHooksProjection(
@@ -10,8 +21,16 @@ export function renderHooksProjection(
   language: WritingLanguage = "zh",
   options?: { readonly currentChapter?: number },
 ): string {
+<<<<<<< HEAD
   void options;
   const title = language !== "zh" ? "# Pending Hooks" : "# 伏笔池";
+=======
+  const title = language !== "zh" ? "# Pending Hooks" : "# 伏笔池";
+  // Phase 7 + hotfixes 1 & 2: depends_on / pays_off_in_arc / core_hook / half_life / promoted
+  // are visible columns, so writer and reviewer both see the causal chain, planned payoff arc,
+  // stale threshold, and promotion flag. stale / blocked diagnostic flags are appended to the
+  // status cell.
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   const headers = language !== "zh"
     ? [
       "| hook_id | start_chapter | type | status | last_advanced_chapter | expected_payoff | notes |",
@@ -43,6 +62,30 @@ export function renderHooksProjection(
   return [title, "", ...headers, ...rows, ""].join("\n");
 }
 
+<<<<<<< HEAD
+=======
+function renderDependsOnCell(ids: ReadonlyArray<string>, language: WritingLanguage): string {
+  if (ids.length === 0) return language !== "zh" ? "none" : "无";
+  return `[${ids.join(", ")}]`;
+}
+
+function renderCoreHookCell(isCore: boolean, language: WritingLanguage): string {
+  if (language !== "zh") return isCore ? "true" : "false";
+  return isCore ? "是" : "否";
+}
+
+function renderHalfLifeCell(value: number | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
+  return String(Math.trunc(value));
+}
+
+function renderPromotedCell(value: boolean | undefined, language: WritingLanguage): string {
+  if (value === undefined) return "";
+  if (language !== "zh") return value ? "true" : "false";
+  return value ? "是" : "否";
+}
+
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 export function renderChapterSummariesProjection(
   state: ChapterSummariesState,
   language: WritingLanguage = "zh",
@@ -80,6 +123,7 @@ export function renderCurrentStateProjection(
   state: CurrentStateState,
   language: WritingLanguage = "zh",
 ): string {
+<<<<<<< HEAD
   const title = language !== "zh" ? "# Current State" : "# 当前状态";
   const chapterLabel = language !== "zh" ? "Current chapter" : "当前章节";
   const headers = language !== "zh"
@@ -105,6 +149,89 @@ export function renderCurrentStateProjection(
       fact.validFromChapter,
       fact.sourceChapter,
     ].map(escapeTableCell).join(" | ")} |`);
+=======
+  const layout = language !== "zh"
+    ? {
+      title: "# Current State",
+      tableHeader: "| Field | Value |",
+      labels: {
+        chapter: "Current Chapter",
+        location: "Current Location",
+        protagonistState: "Protagonist State",
+        goal: "Current Goal",
+        constraint: "Current Constraint",
+        alliances: "Current Alliances",
+        conflict: "Current Conflict",
+      },
+      placeholders: "(not set)",
+      additionalTitle: "## Additional State",
+    }
+    : {
+      title: "# 当前状态",
+      tableHeader: "| 字段 | 值 |",
+      labels: {
+        chapter: "当前章节",
+        location: "当前位置",
+        protagonistState: "主角状态",
+        goal: "当前目标",
+        constraint: "当前限制",
+        alliances: "当前敌我",
+        conflict: "当前冲突",
+      },
+      placeholders: "（未设定）",
+      additionalTitle: "## 其他状态",
+    };
+
+  const slots = [
+    {
+      label: layout.labels.location,
+      aliases: ["Current Location", "当前位置"],
+    },
+    {
+      label: layout.labels.protagonistState,
+      aliases: ["Protagonist State", "主角状态"],
+    },
+    {
+      label: layout.labels.goal,
+      aliases: ["Current Goal", "当前目标"],
+    },
+    {
+      label: layout.labels.constraint,
+      aliases: ["Current Constraint", "当前限制"],
+    },
+    {
+      label: layout.labels.alliances,
+      aliases: ["Current Alliances", "Current Relationships", "当前敌我"],
+    },
+    {
+      label: layout.labels.conflict,
+      aliases: ["Current Conflict", "当前冲突"],
+    },
+  ] as const;
+
+  const knownPredicates = new Set(
+    slots.flatMap((slot) => slot.aliases.map(normalizePredicate)),
+  );
+  const lines = [
+    layout.title,
+    "",
+    layout.tableHeader,
+    "| --- | --- |",
+    `| ${layout.labels.chapter} | ${escapeTableCell(state.chapter)} |`,
+    ...slots.map((slot) => {
+      const value = findFactValue(state, slot.aliases) ?? layout.placeholders;
+      return `| ${slot.label} | ${escapeTableCell(value)} |`;
+    }),
+  ];
+
+  const additionalFacts = [...state.facts]
+    .filter((fact) => !knownPredicates.has(normalizePredicate(fact.predicate)))
+    .sort((left, right) => compareAdditionalFacts(left.predicate, right.predicate));
+
+  if (additionalFacts.length === 0) {
+    return [...lines, ""].join("\n");
+  }
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
   return [
     title,

@@ -2,6 +2,7 @@ import { ownsWorkMutation } from "../utils/work-mutation-scope.js";
 import { readFile, writeFile, mkdir, readdir, rm, stat, unlink, open } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join, resolve } from "node:path";
+<<<<<<< HEAD
 import { BookConfigSchema, type BookConfig } from "../models/book.js";
 import { ChapterMetaSchema, type ChapterMeta } from "../models/chapter.js";
 import { StateManifestSchema } from "../models/runtime-state.js";
@@ -16,6 +17,12 @@ import {
 import { syncWorkSourceArtifacts } from "../harness/source-sync.js";
 import { commitAtomicFileSet } from "../utils/atomic-file-set.js";
 import type { WritingLanguage } from "../utils/language.js";
+=======
+import type { BookConfig } from "../models/book.js";
+import type { ChapterMeta } from "../models/chapter.js";
+import { bootstrapStructuredStateFromMarkdown, resolveDurableStoryProgress } from "./state-bootstrap.js";
+import { normalizeWritingLanguage, type WritingLanguage } from "../utils/language.js";
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
 const BOOK_LOCK_HEARTBEAT_MS = 30_000;
 const BOOK_LOCK_LEASE_MS = 3 * 60_000;
@@ -124,8 +131,18 @@ export class StateManager {
   }
 
   private async resolveControlDocumentLanguage(bookId: string): Promise<WritingLanguage> {
+<<<<<<< HEAD
     const raw = await readFile(join(this.bookDir(bookId), "book.json"), "utf-8");
     return BookConfigSchema.parse(JSON.parse(raw)).language;
+=======
+    try {
+      const raw = await readFile(join(this.bookDir(bookId), "book.json"), "utf-8");
+      const parsed = JSON.parse(raw) as { language?: unknown };
+      return normalizeWritingLanguage(parsed.language) ?? "en";
+    } catch {
+      return "en";
+    }
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   }
 
   async acquireBookLock(bookId: string): Promise<() => Promise<void>> {

@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { normalizeWritingLanguage } from "@actalk/inkos-core";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { findProjectRoot, log, logError, GLOBAL_CONFIG_DIR, GLOBAL_ENV_PATH } from "../utils.js";
@@ -113,7 +114,11 @@ configCommand
       if (opts.apiFormat) lines.push(`INKOS_LLM_API_FORMAT=${opts.apiFormat}`);
       if (opts.lang) {
         const language = normalizeWritingLanguage(opts.lang);
+<<<<<<< HEAD
         if (!language) throw new Error(`Unsupported writing language: ${opts.lang}`);
+=======
+        if (!language) throw new Error(`Unsupported writing language: ${opts.lang}. Expected zh, en, or vi.`);
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
         lines.push(`INKOS_DEFAULT_LANGUAGE=${language}`);
       }
 

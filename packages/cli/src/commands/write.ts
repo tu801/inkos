@@ -88,6 +88,18 @@ writeCommand
           for (const line of formatWriteNextResultLines(language, result)) log(line);
           log("");
         }
+<<<<<<< HEAD
+=======
+
+        if (result.status === "state-degraded") {
+          if (!opts.json) {
+      log(language !== "zh"
+              ? "State repair required before continuing. Stopping batch."
+              : "需要先修复 state，已停止后续连写。");
+          }
+          break;
+        }
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
       }
 
       if (opts.json) {

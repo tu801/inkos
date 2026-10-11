@@ -193,9 +193,22 @@ export function renderForecastContextMarkdown(context: ForecastContext): string 
 }
 
 async function readBookConfig(bookDir: string): Promise<{ readonly title: string; readonly language: "zh" | "en" | "vi" }> {
+<<<<<<< HEAD
   const raw = await readFile(join(bookDir, "book.json"), "utf-8");
   const parsed = BookConfigSchema.parse(JSON.parse(raw));
   return { title: parsed.title, language: parsed.language ?? "zh" };
+=======
+  try {
+    const raw = await readFile(join(bookDir, "book.json"), "utf-8");
+    const parsed = JSON.parse(raw) as { title?: unknown; language?: unknown };
+    return {
+      title: typeof parsed.title === "string" ? parsed.title : "",
+      language: parsed.language === "vi" ? "vi" : parsed.language === "en" ? "en" : "zh",
+    };
+  } catch {
+    return { title: "", language: "zh" };
+  }
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 }
 
 /**

@@ -7,5 +7,6 @@ describe("tui i18n", () => {
     expect(resolveTuiLocale({ INKOS_TUI_LOCALE: "en" })).toBe("en");
     expect(resolveTuiLocale({ LANG: "en_US.UTF-8" })).toBe("en");
     expect(resolveTuiLocale({}, "en")).toBe("en");
+    expect(resolveTuiLocale({}, "vi")).toBe("en");
   });
 });

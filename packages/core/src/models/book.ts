@@ -26,11 +26,17 @@ export const BookConfigSchema = z.object({
   platform: PlatformSchema,
   genre: GenreSchema,
   status: BookStatusSchema,
+<<<<<<< HEAD
   targetChapters: z.number().int().min(1),
   chapterWordCount: z.number().int().min(1),
   minChapterLength: z.number().int().min(1).optional(),
   maxChapterLength: z.number().int().min(1).optional(),
   language: WritingLanguageSchema,
+=======
+  targetChapters: z.number().int().min(1).default(200),
+  chapterWordCount: z.number().int().min(1000).default(3000),
+  language: WritingLanguageSchema.optional(),
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   parentBookId: z.string().optional(),

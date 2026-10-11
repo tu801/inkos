@@ -225,6 +225,7 @@ const FillNodeParams = Type.Object({
   instruction: Type.String({ description: "what this scene should contain (beats, who speaks, choices)" }),
 });
 
+<<<<<<< HEAD
 const ReviseNodeParams = Type.Object({
   ...FillNodeParams.properties,
   fields: Type.Array(Type.Union([Type.Literal("sceneDesc"), Type.Literal("dialogue")]), {
@@ -232,9 +233,13 @@ const ReviseNodeParams = Type.Object({
     description: "Select only the fields the author permits changing. For dialogue-only edits select dialogue; for description-only edits select sceneDesc. Select both only when both are in scope.",
   }),
 });
+=======
+export type FilmAuthoringLanguage = "zh" | "en" | "vi";
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
 export type FilmAuthoringLanguage = "zh" | "en" | "vi";
 
+<<<<<<< HEAD
 function nodeSystemPrompt(language: FilmAuthoringLanguage, revision = false): string {
   const operation = language === 'en'
     ? revision ? 'Use the activated interactive-film Skill to revise the requested node. Submit only the selected fields through submit_story_node_revision. All other node fields are read-only and preserved by the host.'
@@ -245,6 +250,10 @@ function nodeSystemPrompt(language: FilmAuthoringLanguage, revision = false): st
     ? 'The player renders sceneDesc and condition-matching dialogue on entry, before a choice is made. Outgoing choice effects apply only after that choice; the destination node then renders with the resulting state. sceneDesc is unconditional. Node prose is player-facing; conditions belong in dialogue[].condition.'
     : '播放器进入节点后先显示 sceneDesc 和符合 condition 的对白，随后才让玩家选择。选项 effects 仅在点击该选项后生效，目标节点使用生效后的状态显示。sceneDesc 无条件显示。节点正文面向玩家，状态条件写在 dialogue[].condition 中。';
   return `${operation}\n${rendering}`;
+=======
+function nodeSystemPrompt(language: FilmAuthoringLanguage): string {
+  return language !== "zh" ? NODE_SYSTEM_EN : NODE_SYSTEM_ZH;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 }
 
 function graphUpdatedDetails(rev: number, extra: Record<string, unknown> = {}) {
@@ -280,9 +289,18 @@ export function createFillNodeTool(
         delta: { nodes: { upsert: [filled], remove: [] }, notes: [] },
         phase: "workshop",
       });
+<<<<<<< HEAD
       return textResult(`Node ${params.nodeId} filled (rev ${rev}).`, graphUpdatedDetails(rev, {
         skillIds: deps.skillIds?.() ?? [],
       }));
+=======
+      const userPrompt = language !== "zh"
+        ? `${context}\n\nNode id to fill: ${params.nodeId}\nInstruction: ${params.instruction}`
+        : `${context}\n\n要填的节点 id：${params.nodeId}\n指令：${params.instruction}`;
+      const text = await deps.chat(systemPrompt, userPrompt);
+      const { rev } = await applyGraphDelta({ projectRoot, projectId, delta: buildFillNodeDeltaFromLLMText(text, params.nodeId), phase: "workshop" });
+      return textResult(`Node ${params.nodeId} filled (rev ${rev}).`, graphUpdatedDetails(rev, "interactive-film.script"));
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     },
   };
 }
@@ -316,9 +334,18 @@ export function createReviseNodeTool(
         delta: { nodes: { upsert: [node], remove: [] }, notes: [] },
         phase: "workshop",
       });
+<<<<<<< HEAD
       return textResult(`Node ${params.nodeId} revised (rev ${rev}).`, graphUpdatedDetails(rev, {
         skillIds: deps.skillIds?.() ?? [],
       }));
+=======
+      const userPrompt = language !== "zh"
+        ? `${context}\n\nNode id to revise: ${params.nodeId}\nCurrent content: ${JSON.stringify(current ?? {})}\nRevision instruction: ${params.instruction}`
+        : `${context}\n\n要修改的节点 id：${params.nodeId}\n现有内容：${JSON.stringify(current ?? {})}\n修改指令：${params.instruction}`;
+      const text = await deps.chat(systemPrompt, userPrompt);
+      const { rev } = await applyGraphDelta({ projectRoot, projectId, delta: buildFillNodeDeltaFromLLMText(text, params.nodeId), phase: "workshop" });
+      return textResult(`Node ${params.nodeId} revised (rev ${rev}).`, graphUpdatedDetails(rev, "interactive-film.script"));
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     },
   };
 }
@@ -388,8 +415,16 @@ export function createDraftStructureTool(
         return textResult(`Reference topology applied: ${next.nodes.length} nodes; ${missingSceneNodeIds.length} scenes still need generation.`,graphUpdatedDetails(rev,{skillIds:deps.skillIds?.()??[],referenceTopology:{workId:params.referenceWorkId,sourceHash},missingSceneNodeIds}));
       }
       const context = graph ? buildFilmAuthoringContext(graph) : "(empty graph)";
+<<<<<<< HEAD
       const systemPrompt = language === "en" ? STRUCT_SYSTEM_EN : STRUCT_SYSTEM_ZH;
       const userPrompt = language === "en"
+=======
+      const systemPrompt = await appendPromptPackGuidance(language !== "zh" ? STRUCT_SYSTEM_EN : STRUCT_SYSTEM_ZH, {
+        promptId: "interactive-film.story-graph",
+        projectRoot,
+      });
+      const userPrompt = language !== "zh"
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
         ? `${context}\n\nSkeleton instruction: ${params.instruction}`
         : `${context}\n\n骨架指令：${params.instruction}`;
       const requirements=await readFilmRequirements(projectRoot,projectId);

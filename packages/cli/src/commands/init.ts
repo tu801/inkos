@@ -13,17 +13,27 @@ export const initCommand = new Command("init")
     const projectDir = name ? resolve(process.cwd(), name) : process.cwd();
 
     try {
+      const language = normalizeWritingLanguage(opts.lang) ?? "zh";
       await mkdir(projectDir, { recursive: true });
       await initializeProjectDirectory(projectDir, {
+<<<<<<< HEAD
         language: normalizeWritingLanguage(opts.lang) ?? "zh",
+=======
+        language,
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
         overwriteSupportFiles: true,
       });
 
       log(`Project initialized at ${projectDir}`);
       log("");
+<<<<<<< HEAD
       const isEnglish = (opts.lang ?? "zh") !== "zh";
       const exampleCreateLines = isEnglish
         ? ["  inkos book create --title 'My Novel' --genre progression --platform royalroad --lang en"]
+=======
+      const exampleCreateLines = language !== "zh"
+        ? [`  inkos book create --title 'My Novel' --genre progression --platform royalroad --lang ${language}`]
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
         : [
           "  inkos book create --title '我的小说' --genre xuanhuan --platform tomato",
           "  # English project? Re-run with: inkos init --lang en",

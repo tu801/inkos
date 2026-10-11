@@ -319,11 +319,37 @@ async function produceShort(
   const savedTarget=providedStoryId?(await readShortProductionState(root,shortWorkBaseDir(providedStoryId)))?.target:undefined;
   options={...options,title:options.title??savedTarget?.title,minChapterLength:options.minChapterLength??savedTarget?.minChapterLength,openingHookChars:options.openingHookChars??savedTarget?.openingHookChars,maxChapterLength:options.maxChapterLength??savedTarget?.maxChapterLength,chapterCount:options.chapterCount??savedTarget?.chapterCount,charsPerChapter:options.charsPerChapter??savedTarget?.charsPerChapter};
   const language = options.language ?? "zh";
+<<<<<<< HEAD
   let minimum = shortDraftMinimum(options);
   const chapterCount = positiveInteger(options.chapterCount, SHORT_FICTION_DEFAULT_CHAPTERS, "chapterCount");
   const charsPerChapter = language === "en"
     ? positiveInteger(options.charsPerChapter, SHORT_FICTION_EN_DEFAULT_WORDS_PER_CHAPTER, "charsPerChapter")
     : positiveInteger(options.charsPerChapter, SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER, "charsPerChapter");
+=======
+  const chapterCount = boundedInteger(
+    options.chapterCount,
+    SHORT_FICTION_DEFAULT_CHAPTERS,
+    "chapterCount",
+    SHORT_FICTION_MIN_CHAPTERS,
+    SHORT_FICTION_MAX_CHAPTERS,
+  );
+  // charsPerChapter is the language's native unit: zh chars (900-1200) or en words (600-800).
+  const charsPerChapter = language !== "zh"
+    ? boundedInteger(
+        options.charsPerChapter,
+        SHORT_FICTION_EN_DEFAULT_WORDS_PER_CHAPTER,
+        "charsPerChapter",
+        SHORT_FICTION_EN_MIN_WORDS_PER_CHAPTER,
+        SHORT_FICTION_EN_MAX_WORDS_PER_CHAPTER,
+      )
+    : boundedInteger(
+        options.charsPerChapter,
+        SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
+        "charsPerChapter",
+        SHORT_FICTION_MIN_CHARS_PER_CHAPTER,
+        SHORT_FICTION_MAX_CHARS_PER_CHAPTER,
+      );
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
   // Resume the current outline from disk when this Work already exists.
   const resumedOutline = providedStoryId
@@ -509,11 +535,34 @@ async function produceShort(
       );
       await rm(safeChildPath(root, join(baseDir, "reviews", "draft-warning.md")), { force: true });
     } catch (error) {
+<<<<<<< HEAD
       options.signal?.throwIfAborted();
       draftReviewWarning = error instanceof Error ? error.message : String(error);
       await writeText(root, join(baseDir, "reviews", "draft-warning.md"), language === "en"
         ? `# Review unavailable\n\nThe complete draft remains available.\n\n## Reason\n\n${draftReviewWarning}`
         : `# 审稿暂不可用\n\n完整正文已经保留。\n\n## 原因\n\n${draftReviewWarning}`);
+=======
+      revisionWarning = error instanceof Error ? error.message : String(error);
+      await writeText(root, join(baseDir, "reviews", "draft-v002-warning.md"), language !== "zh"
+        ? [
+            "# Second revision not adopted",
+            "",
+            "The system refused to overwrite the complete first draft with an incomplete or unparsable revision.",
+            "",
+            "## Reason",
+            "",
+            revisionWarning,
+          ].join("\n")
+        : [
+            "# 第二轮改稿未采用",
+            "",
+            "系统没有用不完整或解析失败的改稿覆盖完整首稿。",
+            "",
+            "## 原因",
+            "",
+            revisionWarning,
+          ].join("\n"));
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
     }
 
     productionState = { ...productionState, stages: { ...productionState.stages, review: {
@@ -1015,6 +1064,7 @@ async function writePackageArtifacts(
   language: ShortFictionLanguage = "zh",
 ): Promise<void> {
   const finalDir = join(baseDir, "final");
+<<<<<<< HEAD
   const packageMarkdown = renderShortFictionSalesPackage(salesPackage, language);
   await commitAtomicFileSet({
     rootDir: root,
@@ -1023,6 +1073,38 @@ async function writePackageArtifacts(
       textWrite(join(finalDir, "sales-package.md"), packageMarkdown),
       textWrite(join(finalDir, "cover-prompt.md"), salesPackage.coverPrompt),
     ],
+=======
+  const headings = language !== "zh"
+    ? { intro: "## Synopsis", sellingPoints: "## Selling Points", coverPrompt: "## Cover Prompt" }
+    : { intro: "## 简介", sellingPoints: "## 卖点", coverPrompt: "## 封面提示词" };
+  await writeJson(root, join(finalDir, "sales-package.json"), salesPackage);
+  await writeText(root, join(finalDir, "sales-package.md"), [
+    `# ${salesPackage.title}`,
+    "",
+    headings.intro,
+    "",
+    salesPackage.intro,
+    "",
+    headings.sellingPoints,
+    "",
+    ...salesPackage.sellingPoints.map((point) => `- ${point}`),
+    "",
+    headings.coverPrompt,
+    "",
+    salesPackage.coverPrompt,
+  ].join("\n"));
+  await writeText(root, join(finalDir, "cover-prompt.md"), salesPackage.coverPrompt || "(empty)");
+}
+
+async function writeShortRunStatus(
+  root: string,
+  baseDir: string,
+  value: Record<string, unknown>,
+): Promise<void> {
+  await writeJson(root, join(baseDir, "status.json"), {
+    ...value,
+    updatedAt: new Date().toISOString(),
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   });
 }
 
@@ -1477,6 +1559,7 @@ function buildCoverImagePrompt(
   authorRequest?: string,
   storySources: readonly CoverStorySource[] = [],
 ): string {
+<<<<<<< HEAD
   const request = {
     version: 1,
     authorRequest: authorRequest?.trim() || null,
@@ -1485,6 +1568,47 @@ function buildCoverImagePrompt(
     storyReference: { title: salesPackage.title, synopsis: salesPackage.intro, sellingPoints: salesPackage.sellingPoints,
       ...(storySources.length ? {sources: storySources} : {}) },
   };
+=======
+  if (language !== "zh") {
+    const base = [
+      `Title: ${salesPackage.title}`,
+      salesPackage.intro ? `Synopsis: ${salesPackage.intro}` : "",
+      salesPackage.sellingPoints.length > 0 ? `Selling points: ${salesPackage.sellingPoints.join("; ")}` : "",
+      salesPackage.coverPrompt ? `User visual notes: ${salesPackage.coverPrompt}` : "",
+    ].filter(Boolean);
+
+    if (mode === "generic") {
+      return [
+        "Generate a cover image from the title, synopsis, selling points, and visual notes the user provided.",
+        ...base,
+      ].join("\n");
+    }
+
+    return [
+      "Generate a mobile portrait book cover for an English short story, 3:4 vertical.",
+      ...base.map((line) => line.replace(/^Title: /u, "Main title: ").replace(/^User visual notes: /u, "Packaging notes: ")),
+      "",
+      "Cover direction: a platform short-fiction book cover, not a movie poster. The title lettering is the primary visual — reserve a large two-to-four-line type zone; character in close-up or half-body with a charged expression (cold smirk, shock, breakdown, menace, or payback); props few but large, telegraphing the conflict at a glance.",
+      "High-contrast, high-saturation colors that read as a phone-list thumbnail. Avoid realistic corporate photography, landscape video thumbnails, magazine editorial looks, delicate thin lettering, and long runs of text.",
+      "If the model's text rendering is unreliable, prioritize a clear title whitespace/type-block/layout zone instead of covering the canvas with garbled lettering.",
+    ].filter(Boolean).join("\n");
+  }
+
+  const base = [
+    `标题：${salesPackage.title}`,
+    salesPackage.intro ? `简介：${salesPackage.intro}` : "",
+    salesPackage.sellingPoints.length > 0 ? `卖点：${salesPackage.sellingPoints.join("；")}` : "",
+    salesPackage.coverPrompt ? `用户视觉要求：${salesPackage.coverPrompt}` : "",
+  ].filter(Boolean);
+
+  if (mode === "generic") {
+    return [
+      "按用户给出的标题、简介、卖点和视觉要求生成封面图。",
+      ...base,
+    ].join("\n");
+  }
+
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   return [
     `## Cover request\n\n\`\`\`json\n${JSON.stringify(request, null, 2)}\n\`\`\``,
     language === "en"

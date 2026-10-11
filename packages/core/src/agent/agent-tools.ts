@@ -732,10 +732,41 @@ function runPipelineWithAbortSignal<T>(
   return runPipelineWithAgentContext(pipeline, signal, [], task);
 }
 
+<<<<<<< HEAD
 interface SkillAwareProductionOptions {
   readonly defaultSkills?: ReadonlyArray<ActivatedSkillGuidance>;
   readonly activeSkills?: () => ReadonlyArray<ActivatedSkillGuidance>;
 }
+=======
+export function createSubAgentTool(
+  pipeline: PipelineRunner,
+  activeBookId: string | null,
+  projectRoot?: string,
+  options: {
+    readonly actionPayload?: ActionPayload;
+    readonly architectCreateOnly?: boolean;
+    readonly language?: "zh" | "en" | "vi";
+  } = {},
+): AgentTool<any> {
+  const sessionIsZh = (options.language ?? "zh") !== "en";
+  return {
+    name: "sub_agent",
+    description: options.architectCreateOnly
+      ? "Create a new long-form InkOS book foundation. This confirmation turn can only call agent='architect'; writing chapters happens after the session is bound to the created book."
+      : "Delegate a heavy operation to a specialised sub-agent. " +
+        "Use agent='architect' to initialise a new book, 'writer' to write the next chapter, " +
+        "'auditor' to audit quality, 'reviser' to revise a chapter, 'exporter' to export.",
+    label: "Sub-Agent",
+    parameters: options.architectCreateOnly ? ArchitectCreateSubAgentParams : SubAgentParams,
+    prepareArguments: prepareSubAgentArguments,
+    async execute(
+      _toolCallId: string,
+      params: SubAgentParamsType,
+      _signal?: AbortSignal,
+      onUpdate?: AgentToolUpdateCallback,
+    ): Promise<AgentToolResult<unknown>> {
+      const { agent, instruction, bookId, title, chapterNumber, genre, platform, language, targetChapters, chapterWordCount, revise, feedback, mode, format, approvedOnly } = params;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
 function resolveProductionToolSkills(options: SkillAwareProductionOptions): ActivatedSkillGuidance[] {
   return mergeActivatedSkillGuidance(
@@ -1692,6 +1723,7 @@ const ShortFictionRunParams = Type.Object({
 
 type ShortFictionRunParamsType = Static<typeof ShortFictionRunParams>;
 
+<<<<<<< HEAD
 export function createShortFictionRunTool(
   pipeline: PipelineRunner,
   projectRoot: string,
@@ -1700,6 +1732,26 @@ export function createShortFictionRunTool(
     readonly language?: "zh" | "en" | "vi";
     readonly activeWorkId?: string;
   } & SkillAwareProductionOptions = {},
+=======
+// 启动 pipeline 之前校验 charsPerChapter 是否落在最终语言的合法区间：
+// 确认卡 payload 在 language 缺省时只能做 600-1200 并集校验，这里能拿到最终
+// 语言（payload.language ?? 会话语言 ?? zh，与 runner 的默认一致），越界立即
+// 抛出带合法范围的双语错误，不让任务开跑后才在 runner 中途失败。
+function assertShortRunCharsPerChapter(
+  value: number | undefined,
+  language: "zh" | "en" | "vi",
+): void {
+  if (value === undefined) return;
+  const { min, max } = shortRunCharsPerChapterRange(language);
+  if (Number.isInteger(value) && value >= min && value <= max) return;
+  throw new Error(shortRunCharsPerChapterError(value, language));
+}
+
+export function createShortFictionRunTool(
+  pipeline: PipelineRunner,
+  projectRoot: string,
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 ): AgentTool<typeof ShortFictionRunParams> {
   return {
     name: "short_fiction_run",
@@ -1854,10 +1906,14 @@ type ScriptCreateParamsType = Static<typeof ScriptCreateParams>;
 export function createScriptCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
+<<<<<<< HEAD
   options: {
     readonly actionPayload?: ActionPayload;
     readonly language?: "zh" | "en" | "vi";
   } & SkillAwareProductionOptions = {},
+=======
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 ): AgentTool<typeof ScriptCreateParams> {
   return {
     name: "script_create",
@@ -1945,10 +2001,14 @@ type StoryboardCreateParamsType = Static<typeof StoryboardCreateParams>;
 export function createStoryboardCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
+<<<<<<< HEAD
   options: {
     readonly actionPayload?: ActionPayload;
     readonly language?: "zh" | "en" | "vi";
   } & SkillAwareProductionOptions = {},
+=======
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 ): AgentTool<typeof StoryboardCreateParams> {
   return {
     name: "storyboard_create",
@@ -2043,10 +2103,14 @@ type InteractiveFilmCreateParamsType = Static<typeof InteractiveFilmCreateParams
 export function createInteractiveFilmCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
+<<<<<<< HEAD
   options: {
     readonly actionPayload?: ActionPayload;
     readonly language?: "zh" | "en" | "vi";
   } & SkillAwareProductionOptions = {},
+=======
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 ): AgentTool<typeof InteractiveFilmCreateParams> {
   return {
     name: "interactive_film_create",
@@ -2282,7 +2346,7 @@ export function createPlayStartTool(
       await store.ensureRun(world.id, runId);
 
       const existingTranscript = await store.readTranscript(world.id, runId);
-      const sceneText = (initialScene?.trim() || (world.language === "en"
+      const sceneText = (initialScene?.trim() || (world.language !== "zh"
         ? [`You enter "${world.title}".`, world.premise || "The scene is set. Make your first move."].join("\n")
         : [`你进入「${world.title}」。`, world.premise || "场景已经就位，等待你的第一个动作。"].join("\n"))).trim();
       const suggestedActions = world.mode === "guided"
@@ -2387,7 +2451,11 @@ const PlayStepParams = Type.Object({
 
 type PlayStepParamsType = Static<typeof PlayStepParams>;
 
+<<<<<<< HEAD
 export interface PlayStepToolOptions extends SkillAwareProductionOptions {
+=======
+export interface PlayStepToolOptions {
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   readonly language?: "zh" | "en" | "vi";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
@@ -2420,7 +2488,11 @@ const PlayReviseParams = Type.Object({
 
 type PlayReviseParamsType = Static<typeof PlayReviseParams>;
 
+<<<<<<< HEAD
 export interface PlayReviseToolOptions extends SkillAwareProductionOptions {
+=======
+export interface PlayReviseToolOptions {
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   readonly language?: "zh" | "en" | "vi";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
@@ -2538,11 +2610,19 @@ export function createPlayEditTool(
       const runId = "main";
       const world = await store.loadWorld(worldId);
       if (!world) {
+<<<<<<< HEAD
         throw new Error(language === "en"
           ? "There is no interactive world to edit yet. Start one with play_start first."
           : "还没有可编辑的互动世界。先用 play_start 开一局。");
+=======
+        return textResult(
+          (language ?? "zh") !== "zh"
+            ? "There is no interactive world to edit yet. Start one with play_start first."
+            : "还没有可编辑的互动世界。先用 play_start 开一局。",
+        );
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
       }
-      const isZh = (world.language ?? "zh") !== "en";
+      const isZh = (world.language ?? "zh") === "zh";
 
       const patch: Parameters<PlayStore["updateWorld"]>[1] = {};
       if(params.choiceCount!==undefined)patch.choiceCount=params.choiceCount;
@@ -2662,9 +2742,17 @@ export function createPlayStepTool(
       const runId = "main";
       const world = await store.loadWorld(worldId);
       if (!world) {
+<<<<<<< HEAD
         throw new Error(options.language === "en"
           ? "There is no interactive world to advance yet. Start one with play_start first."
           : "还没有可推进的互动世界。先用 play_start 开一局。");
+=======
+        return textResult(
+          (options.language ?? "zh") !== "zh"
+            ? "There is no interactive world to advance yet. Start one with play_start first."
+            : "还没有可推进的互动世界。先用 play_start 开一局。",
+        );
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
       }
       const target = { worldId, runId, world };
       const activatedSkills = resolveProductionToolSkills(options);
@@ -2749,6 +2837,7 @@ export function createPlayReviseTool(
       const runId = "main";
       const world = await store.loadWorld(worldId);
       if (!world) {
+<<<<<<< HEAD
         throw new Error(options.language === "en"
           ? "There is no interactive world to redo yet. Start one with play_start first."
           : "还没有可重做的互动世界。先用 play_start 开一局。");
@@ -2773,6 +2862,21 @@ export function createPlayReviseTool(
         });
         runner = activeRunner;
         return task(activeRunner);
+=======
+        return textResult(
+          (options.language ?? "zh") !== "zh"
+            ? "There is no interactive world to redo yet. Start one with play_start first."
+            : "还没有可重做的互动世界。先用 play_start 开一局。",
+        );
+      }
+      const isZh = (world.language ?? "zh") === "zh";
+      const ctx = pipeline.createAgentContext("play");
+      const runner = options.runnerFactory?.({ projectRoot, worldId, runId, ctx }) ?? new PlayRunner({
+        projectRoot,
+        worldId,
+        runId,
+        ctx,
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
       });
 
       let replay: PlayReplayResult;

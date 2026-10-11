@@ -5,7 +5,14 @@ import { renderHooksProjection } from "../state/state-projections.js";
 export function buildGovernedHookWorkingSet(params: {
   readonly hooks: ReadonlyArray<HookRecord>;
   readonly contextPackage: ContextPackage;
+<<<<<<< HEAD
   readonly language: "zh" | "en" | "vi";
+=======
+  readonly chapterIntent?: string;
+  readonly chapterNumber: number;
+  readonly language: "zh" | "en" | "vi";
+  readonly keepRecent?: number;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 }): string {
   if (params.hooks.length === 0) return renderHooksProjection({ hooks: [] }, params.language);
 

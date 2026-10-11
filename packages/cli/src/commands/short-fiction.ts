@@ -51,11 +51,19 @@ shortCommand
   .description("Run a short fiction chain from a direction")
   .requiredOption("--direction <text>", "Story direction, e.g. \"女频短篇 婚姻背叛 证据反杀\" or \"female-lead short: marriage betrayal, evidence payback\"")
   .option("--reference <path>", "Optional reference notes/text")
+<<<<<<< HEAD
   .option("--story-id <id>", "Work id for the generated short fiction")
   .option("--lang <language>", "Writing language: zh, en, or vi", "zh")
   .option("--chapters <n>", "Complete short chapter count", String(SHORT_FICTION_DEFAULT_CHAPTERS))
   .option("--chars <n>", "Per-chapter length: zh characters, or en/vi words")
   .option("--min-chapter-length-ratio <ratio>", "Minimum complete chapter length relative to target (0 < ratio <= 1)", "0.5")
+=======
+  .option("--story-id <id>", "Output story id under shorts/")
+  .option("--out-dir <path>", "Output directory", "shorts")
+  .option("--lang <language>", "Writing language: zh, en, or vi", "zh")
+  .option("--chapters <n>", "Complete short chapter count (12-18)", String(SHORT_FICTION_DEFAULT_CHAPTERS))
+  .option("--chars <n>", "Per-chapter length: zh characters (900-1200) or en words (600-800)")
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   .option("--llm-base-url <url>", "Override LLM base URL")
   .option("--model <model>", "Fallback model for all short stages")
   .option("--planner-model <model>", "Model for outline creation")
@@ -82,8 +90,13 @@ shortCommand
         ? undefined
         : parsePositiveInteger(
             opts.chars,
-            language === "en" ? SHORT_FICTION_EN_DEFAULT_WORDS_PER_CHAPTER : SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
+            language !== "zh" ? SHORT_FICTION_EN_DEFAULT_WORDS_PER_CHAPTER : SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
             "chars",
+<<<<<<< HEAD
+=======
+            language !== "zh" ? SHORT_FICTION_EN_MIN_WORDS_PER_CHAPTER : SHORT_FICTION_MIN_CHARS_PER_CHAPTER,
+            language !== "zh" ? SHORT_FICTION_EN_MAX_WORDS_PER_CHAPTER : SHORT_FICTION_MAX_CHARS_PER_CHAPTER,
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
           );
       const reference = opts.reference ? await readReference(root, opts.reference) : undefined;
       const models = resolveShortRunModels(opts);
@@ -187,8 +200,8 @@ interface ShortRunOptions {
 }
 
 function parseShortFictionLanguage(value: string): ShortFictionLanguage {
-  if (value === "zh" || value === "en") return value;
-  throw new Error("lang must be zh or en.");
+  if (value === "zh" || value === "en" || value === "vi") return value;
+  throw new Error("lang must be zh, en, or vi.");
 }
 
 interface ShortRunModels {

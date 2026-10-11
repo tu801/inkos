@@ -358,7 +358,7 @@ function agentCacheKey(projectRoot: string, sessionId: string): string {
 
 function buildAttachmentUserBlock(attachments: ReadonlyArray<AgentSessionAttachment> | undefined, language: string): string {
   if (!attachments?.length) return "";
-  const isEn = language === "en";
+  const isEn = language !== "zh";
   const lines = [
     isEn
       ? "\n\n## Uploaded Files (host-provided, user-authorized)"
@@ -714,6 +714,7 @@ async function loadSurfaceWork(
   }
 }
 
+<<<<<<< HEAD
 function isHostConfirmedAction(
   actionSource: NonNullable<AgentSessionConfig["actionSource"]>,
   requestedIntent: AgentSessionConfig["requestedIntent"],
@@ -723,6 +724,28 @@ function isHostConfirmedAction(
     && (actionSource === "button" || actionSource === "slash"),
   );
 }
+=======
+function createModeTools(params: CreateAgentToolsForModeParams) {
+  const lang = params.language === "vi" ? "vi" : params.language === "zh" ? "zh" : "en";
+  const subAgentTool = createSubAgentTool(params.pipeline, params.bookId, params.projectRoot, {
+    actionPayload: params.actionPayload,
+    language: lang,
+  });
+  const proposalTool = createProposeActionTool(lang, {
+    sameSession: params.sessionKind !== "chat",
+    requestedSkillIds: params.requestedSkillIds,
+  });
+  const researchTool = createResearchWebTool(params.projectRoot);
+  const materialTool = createIngestMaterialTool(params.projectRoot);
+  const materialRetrievalTool = createRetrieveMaterialTool(params.projectRoot);
+  const importChaptersTool = createImportChaptersTool(params.pipeline, params.bookId, params.projectRoot);
+  const isConfirmed = (
+    intent: NonNullable<AgentSessionConfig["requestedIntent"]>,
+  ): boolean => {
+    return (params.actionSource === "button" || params.actionSource === "slash")
+      && params.requestedIntent === intent;
+  };
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 
 function agentOutputBudget(model: Model<Api>): number {
   return Math.min(8192, typeof model.maxTokens === "number" && model.maxTokens > 0 ? model.maxTokens : 4096);

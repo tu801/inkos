@@ -14,9 +14,15 @@ describe("length metrics", () => {
     expect(countChapterLength("He looked at the sky.", "en_words")).toBe(5);
   });
 
+  it("counts Vietnamese chapter length as Unicode words", () => {
+    expect(countChapterLength("Cô ấy ngẩng đầu nhìn bầu trời.", "vi_words")).toBe(7);
+    expect(countChapterLength("lặng-lẽ chẳng nói gì", "vi_words")).toBe(4);
+  });
+
   it("defaults chapter length to the language-native unit", () => {
     expect(defaultChapterLength("zh")).toBe(3000);
     expect(defaultChapterLength("en")).toBe(2000);
+    expect(defaultChapterLength("vi")).toBe(2000);
     expect(defaultChapterLength()).toBe(3000);
   });
 
@@ -46,4 +52,47 @@ describe("length metrics", () => {
       countingMode: "en_words",
     });
   });
+<<<<<<< HEAD
+=======
+
+  it("builds a conservative length spec for English chapters", () => {
+    const spec = buildLengthSpec(2200, "en");
+
+    expect(spec.countingMode).toBe("en_words");
+    expect(spec.softMin).toBe(1900);
+    expect(spec.softMax).toBe(2500);
+    expect(spec.hardMin).toBe(1600);
+    expect(spec.hardMax).toBe(2800);
+  });
+
+  it("uses Vietnamese word counting in length specs", () => {
+    expect(buildLengthSpec(2000, "vi").countingMode).toBe("vi_words");
+  });
+
+  it("scales the conservative bands for smaller targets", () => {
+    const spec = buildLengthSpec(220, "zh");
+
+    expect(spec.softMin).toBe(190);
+    expect(spec.softMax).toBe(250);
+    expect(spec.hardMin).toBe(160);
+    expect(spec.hardMax).toBe(280);
+  });
+
+  it("detects soft and hard range drift", () => {
+    const spec = buildLengthSpec(2200, "zh");
+
+    expect(isOutsideSoftRange(1800, spec)).toBe(true);
+    expect(isOutsideSoftRange(2200, spec)).toBe(false);
+    expect(isOutsideHardRange(1500, spec)).toBe(true);
+    expect(isOutsideHardRange(2200, spec)).toBe(false);
+  });
+
+  it("chooses normalization direction from the measured length", () => {
+    const spec = buildLengthSpec(2200, "zh");
+
+    expect(chooseNormalizeMode(1800, spec)).toBe("expand");
+    expect(chooseNormalizeMode(2200, spec)).toBe("none");
+    expect(chooseNormalizeMode(2600, spec)).toBe("compress");
+  });
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 });

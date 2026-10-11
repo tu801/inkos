@@ -1,5 +1,8 @@
 import { z } from "zod";
+<<<<<<< HEAD
 import { LLM_API_FORMATS } from "../llm/api-format.js";
+=======
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 import { WritingLanguageSchema } from "../utils/language.js";
 
 export const LLMServiceEntrySchema = z.object({

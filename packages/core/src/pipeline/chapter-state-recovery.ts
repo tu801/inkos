@@ -134,13 +134,18 @@ export function buildStateReconciliationFeedback(
   observations: ReadonlyArray<Observation>,
   language: LengthLanguage,
 ): string {
+<<<<<<< HEAD
   if (observations.length === 0) {
     return language === "en"
+=======
+  if (warnings.length === 0) {
+    return language !== "zh"
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
       ? "The previous settlement contradicted the chapter text. Reconcile truth files strictly to the body."
       : "上一次状态结算与正文矛盾。请严格以正文为准修正 truth files。";
   }
 
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "The previous settlement needs reconciliation. Align these differences with the chapter body:",
       ...observations.map((observation) => `- [${observation.code}] ${observation.summary}`),
@@ -155,7 +160,40 @@ export function buildStateReconciliationFeedback(
 
 export function unresolvedStateObservation(
   language: LengthLanguage,
+<<<<<<< HEAD
 ): Observation {
+=======
+): ReadonlyArray<AuditIssue> {
+  if (warnings.length > 0) {
+    return warnings.map((warning) => ({
+      severity: "warning" as const,
+      category: "state-validation",
+      description: warning.description,
+      suggestion: language !== "zh"
+        ? "Repair chapter state from the persisted body before continuing."
+        : "请先基于已保存正文修复本章 state，再继续后续章节。",
+    }));
+  }
+
+  return [{
+    severity: "warning",
+    category: "state-validation",
+    description: language !== "zh"
+      ? "State validation still failed after settlement retry."
+      : "状态结算重试后仍未通过校验。",
+    suggestion: language !== "zh"
+      ? "Repair chapter state from the persisted body before continuing."
+      : "请先基于已保存正文修复本章 state，再继续后续章节。",
+  }];
+}
+
+export function buildStateDegradedPersistenceOutput(params: {
+  readonly output: WriteChapterOutput;
+  readonly oldState: string;
+  readonly oldHooks: string;
+  readonly oldLedger: string;
+}): WriteChapterOutput {
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   return {
     code: "state-validation",
     summary: language === "en"

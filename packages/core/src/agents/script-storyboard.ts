@@ -305,6 +305,66 @@ export function renderInteractiveFilmSpec(input: InteractiveFilmCreationInput): 
 }
 
 
+<<<<<<< HEAD
+=======
+export function extractMarkdownSection(raw: string, headings: readonly string[]): string | undefined {
+  const lines = raw.split(/\r?\n/);
+  let start = -1;
+  let level = 0;
+  const normalizedHeadings = headings.map(normalizeHeadingText);
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = /^(#{1,6})\s*(.+?)\s*$/u.exec(lines[index] ?? "");
+    if (!match) continue;
+    const text = normalizeHeadingText(match[2]!);
+    if (normalizedHeadings.some((heading) => headingMatches(text, heading))) {
+      start = index + 1;
+      level = match[1]!.length;
+      break;
+    }
+  }
+  if (start < 0) return undefined;
+  let end = lines.length;
+  for (let index = start; index < lines.length; index += 1) {
+    const match = /^(#{1,6})\s+/u.exec(lines[index] ?? "");
+    if (match && match[1]!.length <= level) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n");
+}
+
+function normalizeHeadingText(text: string): string {
+  return text
+    .trim()
+    .replace(/^\*\*(.+)\*\*$/u, "$1")
+    .replace(/[`*_]+/gu, "")
+    .replace(/\s+/gu, " ")
+    .toLowerCase();
+}
+
+function headingMatches(text: string, heading: string): boolean {
+  if (text === heading) return true;
+  if (!text.startsWith(heading)) return false;
+  const rest = text.slice(heading.length).trim();
+  return rest === "" || /^[（(【\[\s:：\-—]/u.test(rest);
+}
+
+export function normalizeScriptEpisodeEndLabels(script: string): string {
+  const lines = script.split(/\r?\n/);
+  let currentEpisode: string | null = null;
+  return lines.map((line) => {
+    const heading = /^#{1,6}\s*第\s*([一二三四五六七八九十百千万\d]+)\s*集(?:\s|$)/u.exec(line.trim());
+    if (heading) currentEpisode = heading[1]!;
+    if (!currentEpisode) return line;
+    return line.replace(
+      /(字幕\s*[：:]\s*)第\s*[一二三四五六七八九十百千万\d]+\s*集完/gu,
+      `$1第${currentEpisode}集完`,
+    );
+  }).join("\n");
+}
+
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
 function buildScriptCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
   if (language !== "zh") {
     return [
@@ -372,9 +432,13 @@ function buildStoryboardCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"
 }
 
 function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
+<<<<<<< HEAD
   const maxShotsRule = input.maxShots
     ? (language === "en" ? `Do not exceed ${input.maxShots} shots.` : `镜头总数不得超过 ${input.maxShots}。`)
     : "";
+=======
+  const maxShots = input.maxShots ?? 24;
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   if (language !== "zh") {
     return [
       "## Storyboard Spec",
@@ -490,10 +554,13 @@ function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationIn
 }
 
 function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh" | "en" | "vi" = "zh"): string {
+<<<<<<< HEAD
   const custom = value?.trim();
   if (custom && !["vertical_short_drama", "screenplay", "audio_drama", "interactive_script", "general_script"].includes(custom)) {
     return custom;
   }
+=======
+>>>>>>> d43014ef9e770ff28751f397bc63cac734c53bec
   if (language !== "zh") {
     switch (value) {
       case "vertical_short_drama":
