@@ -274,5 +274,10 @@ function normalizeLocale(value: string | undefined): TuiLocale | undefined {
     return "en";
   }
 
+  // Vietnamese currently reuses the English UI copy, never the Chinese copy.
+  if (normalized.startsWith("vi")) {
+    return "en";
+  }
+
   return undefined;
 }

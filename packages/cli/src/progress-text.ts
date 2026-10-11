@@ -67,18 +67,18 @@ export function formatImportCompletionLines(
   },
 ): string[] {
   return [
-    language === "en" ? "Import complete:" : "导入完成：",
-    language === "en"
+    language !== "zh" ? "Import complete:" : "导入完成：",
+    language !== "zh"
       ? `  Chapters imported: ${result.importedCount}`
       : `  已导入章节：${result.importedCount}`,
-    language === "en"
+    language !== "zh"
       ? `  Total length: ${result.totalCountLabel}`
       : `  总长度：${result.totalCountLabel}`,
-    language === "en"
+    language !== "zh"
       ? `  Next chapter number: ${result.nextChapter}`
       : `  下一章编号：${result.nextChapter}`,
     "",
-    language === "en"
+    language !== "zh"
       ? `Run "inkos write next ${result.bookId}" to continue writing.`
       : `运行 "inkos write next ${result.bookId}" 继续写作。`,
   ];

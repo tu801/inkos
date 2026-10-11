@@ -19,7 +19,7 @@ const SLASH_COMMAND_VARIANTS: ReadonlyArray<{ zh: string; en: string }> = [
 ];
 
 export function buildSlashCommands(language: CliLanguage = "zh"): readonly string[] {
-  return SLASH_COMMAND_VARIANTS.map((variant) => (language === "en" ? variant.en : variant.zh));
+  return SLASH_COMMAND_VARIANTS.map((variant) => (language === "zh" ? variant.zh : variant.en));
 }
 
 export const SLASH_COMMANDS = buildSlashCommands("zh");

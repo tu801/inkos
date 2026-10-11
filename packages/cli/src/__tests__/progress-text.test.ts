@@ -89,4 +89,13 @@ describe("CLI progress text", () => {
       'Run "inkos write next demo-book" to continue writing.',
     ]);
   });
+
+  it("uses non-Chinese progress copy for Vietnamese books", () => {
+    expect(formatImportCompletionLines("vi", {
+      importedCount: 2,
+      totalCountLabel: "4000 từ",
+      nextChapter: 3,
+      bookId: "sach-viet",
+    })[0]).toBe("Import complete:");
+  });
 });
