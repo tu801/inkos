@@ -1,4 +1,5 @@
 import { BaseAgent } from "./base.js";
+import { languageOutputInstruction } from "../utils/language.js";
 import type { BookConfig, FanficMode } from "../models/book.js";
 import { join } from "node:path";
 import { readdir } from "node:fs/promises";
@@ -58,15 +59,15 @@ export class ArchitectAgent extends BaseAgent {
       ? this.buildRevisePrompt(options.reviseFrom)
       : "";
 
-    const systemPrompt = resolvedLanguage === "en"
+    const systemPrompt = resolvedLanguage !== "zh"
       ? this.buildEnglishFoundationPrompt(book, contextBlock, reviewFeedbackBlock)
       : this.buildChineseFoundationPrompt(book, contextBlock, reviewFeedbackBlock);
 
-    const langPrefix = resolvedLanguage === "en"
-      ? "【LANGUAGE OVERRIDE】All submitted foundation content, character names, place names, and prose must be in English.\n\n"
+    const langPrefix = resolvedLanguage !== "zh"
+      ? `${languageOutputInstruction(resolvedLanguage)}\n\n`
       : "";
-    const userMessage = resolvedLanguage === "en"
-      ? `Generate the complete foundation for the ${book.genre} Work titled "${book.title}". Write everything in English.`
+    const userMessage = resolvedLanguage !== "zh"
+      ? `Generate the complete foundation for the ${book.genre} Work titled "${book.title}". ${languageOutputInstruction(resolvedLanguage)}`
       : `请为标题为"${book.title}"的${book.genre}作品生成完整基础设定。`;
 
     return this.generateFoundationInStages({
@@ -129,7 +130,7 @@ ${reviseFrom.userFeedback || "（无）"}
     readonly book: BookConfig;
     readonly contextBlock: string;
     readonly reviewFeedbackBlock: string;
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "en" | "vi";
   }): string {
     const { book, contextBlock, reviewFeedbackBlock, language } = params;
     const metadata = language === "en"
@@ -142,7 +143,7 @@ ${reviseFrom.userFeedback || "（无）"}
   async writeFoundationFiles(
     bookDir: string,
     output: ArchitectOutput,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
     mode: "init" | "revise" = "init",
   ): Promise<void> {
     const writes: AtomicFileWrite[] = [
@@ -196,14 +197,14 @@ ${reviseFrom.userFeedback || "（无）"}
     const reviewFeedbackBlock = this.buildReviewFeedbackBlock(reviewFeedback, resolvedLanguage);
 
     const contextBlock = externalContext
-      ? (resolvedLanguage === "en"
+      ? (resolvedLanguage !== "zh"
           ? `\n\n## External Instructions\n${externalContext}\n`
           : `\n\n## 外部指令\n${externalContext}\n`)
       : "";
 
     const isSeries = options?.importMode === "series";
 
-    const continuationDirective = resolvedLanguage === "en"
+    const continuationDirective = resolvedLanguage !== "zh"
       ? `## Import mode\n${isSeries ? "series" : "continuation"}`
       : `## 导入模式\n${isSeries ? "系列新作" : "原线续写"}`;
 
@@ -212,11 +213,11 @@ ${reviseFrom.userFeedback || "（无）"}
       contextBlock,
       reviewFeedbackBlock,
       language: resolvedLanguage,
-    }) + (resolvedLanguage === "en"
+    }) + (resolvedLanguage !== "zh"
       ? `\n\n${continuationDirective}\nDerive established facts from the source package. Explicit continuation instructions control future plot and ending. Never infer a mandatory future event from tone or a mystery alone; keep unprescribed futures open. A compressed package is evidence, not permission to invent missing canon. ALL output MUST be written in English.`
       : `\n\n${continuationDirective}\n既成事实从资料包推导；未来剧情和结局服从明确的续写指令。不能仅凭文风或悬念推导必须发生的未来事件，未指定的发展保留开放。压缩资料包是证据，不是臆造缺失正典的许可。`);
 
-    const userMessage = resolvedLanguage === "en"
+    const userMessage = resolvedLanguage !== "zh"
       ? `Generate the complete foundation for the imported ${book.genre} Work titled "${book.title}". Write everything in English.\n\n${chaptersText}`
       : `以下是《${book.title}》的已有正文资料包，请从中反向推导完整基础设定：\n\n${chaptersText}`;
 
@@ -240,7 +241,7 @@ ${reviseFrom.userFeedback || "（无）"}
     const resolvedLanguage = book.language;
     const reviewFeedbackBlock = this.buildReviewFeedbackBlock(reviewFeedback, resolvedLanguage);
 
-    const canonBlock = resolvedLanguage === "en"
+    const canonBlock = resolvedLanguage !== "zh"
       ? `\n\n## Fanfic mode: ${fanficMode}\n\n## Source canon\n${fanficCanon}`
       : `\n\n## 同人模式：${fanficMode}\n\n## 原作正典\n${fanficCanon}`;
     const systemPrompt = this.buildFoundationProtocol({
@@ -262,7 +263,7 @@ ${reviseFrom.userFeedback || "（无）"}
   private async generateFoundationInStages(input: {
     readonly systemPrompt: string;
     readonly userMessage: string;
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "en" | "vi";
     readonly temperature: number;
     readonly onOutline?: (outline: { readonly storyFrame: string; readonly volumeMap: string }) => void | Promise<void>;
   }): Promise<ArchitectOutput> {
@@ -344,7 +345,7 @@ ${reviseFrom.userFeedback || "（无）"}
   }
   private buildReviewFeedbackBlock(
     reviewFeedback: string | undefined,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): string {
     const trimmed = reviewFeedback?.trim();
     if (!trimmed) return "";

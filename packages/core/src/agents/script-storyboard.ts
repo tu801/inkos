@@ -14,7 +14,7 @@ export interface ScriptCreationInput {
   readonly requirements?: string;
   readonly episodeCount?: number;
   readonly episodeDuration?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface StoryboardCreationInput {
@@ -27,7 +27,7 @@ export interface StoryboardCreationInput {
   readonly aspectRatio?: string;
   readonly granularity?: string;
   readonly maxShots?: number;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface InteractiveFilmCreationInput {
@@ -41,7 +41,7 @@ export interface InteractiveFilmCreationInput {
   readonly episodeDuration?: string;
   readonly budget?: string;
   readonly referenceMode?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export class ScriptCreationAgent extends BaseAgent {
@@ -51,7 +51,7 @@ export class ScriptCreationAgent extends BaseAgent {
 
   private async recoverProductionMarkdown(
     fragments: string,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
     requiredHeadings: readonly string[],
   ): Promise<string> {
     const response = await this.chat([
@@ -168,7 +168,7 @@ export class InteractiveFilmCreationAgent extends BaseAgent {
   }
 }
 
-function productionBrief(input: {authorRequest?: string; requirements?: string}, language: "zh" | "en") {
+function productionBrief(input: {authorRequest?: string; requirements?: string}, language: "zh" | "en" | "vi") {
   const en = language === "en";
   return [
     ...(input.authorRequest?.trim() ? [en ? "## Author request" : "## 作者原始请求", input.authorRequest, ""] : []),
@@ -180,7 +180,7 @@ function productionBrief(input: {authorRequest?: string; requirements?: string},
 }
 
 export function renderScriptSpec(input: ScriptCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
+  if ((input.language ?? "zh") !== "zh") {
     return [
       `# ${input.title} Script Creation Spec`,
       "",
@@ -219,7 +219,7 @@ export function renderScriptSpec(input: ScriptCreationInput): string {
 }
 
 export function renderStoryboardSpec(input: StoryboardCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
+  if ((input.language ?? "zh") !== "zh") {
     return [
       `# ${input.title} Storyboard Creation Spec`,
       "",
@@ -256,7 +256,7 @@ export function renderStoryboardSpec(input: StoryboardCreationInput): string {
 }
 
 export function renderInteractiveFilmSpec(input: InteractiveFilmCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
+  if ((input.language ?? "zh") !== "zh") {
     return [
       `# ${input.title} Interactive Film Creation Spec`,
       "",
@@ -305,8 +305,8 @@ export function renderInteractiveFilmSpec(input: InteractiveFilmCreationInput): 
 }
 
 
-function buildScriptCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildScriptCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "Produce the confirmed script artifact with the activated script-writing Skill.",
       "The deliverable must include the exact Markdown headings `## Characters` and `## Script`, followed by a complete performable script rather than a proposal or outline.",
@@ -320,8 +320,8 @@ function buildScriptCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
   ].join("\n");
 }
 
-function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "## Creation Spec",
       renderScriptSpec(input),
@@ -358,8 +358,8 @@ function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh
   ].join("\n");
 }
 
-function buildStoryboardCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildStoryboardCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "Execute the confirmed visual spec with the activated storyboard Skill; unconfirmed choices remain adjustable.",
       "Submit the complete human-readable storyboard and its image prompts together through the result tool. No model self-narration or process explanation.",
@@ -371,11 +371,11 @@ function buildStoryboardCreationSystemPrompt(language: "zh" | "en" = "zh"): stri
   ].join("\n");
 }
 
-function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, language: "zh" | "en" = "zh"): string {
+function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
   const maxShotsRule = input.maxShots
     ? (language === "en" ? `Do not exceed ${input.maxShots} shots.` : `镜头总数不得超过 ${input.maxShots}。`)
     : "";
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Storyboard Spec",
       renderStoryboardSpec(input),
@@ -412,8 +412,8 @@ function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, langu
   ].join("\n");
 }
 
-function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "Execute the confirmed spec with the activated interactive-film Skill; unconfirmed choices remain adjustable.",
       "Submit the complete package through the result tool. storyTree, flags, script, and storyboard are complete human-readable Markdown artifacts; imagePrompts preserve shot order; storyGraph is the playable graph for the same material.",
@@ -427,8 +427,8 @@ function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" = "zh"):
   ].join("\n");
 }
 
-function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationInput, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "## Interactive Film Spec",
       renderInteractiveFilmSpec(input),
@@ -489,12 +489,12 @@ function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationIn
   ].join("\n");
 }
 
-function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh" | "en" = "zh"): string {
+function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh" | "en" | "vi" = "zh"): string {
   const custom = value?.trim();
   if (custom && !["vertical_short_drama", "screenplay", "audio_drama", "interactive_script", "general_script"].includes(custom)) {
     return custom;
   }
-  if (language === "en") {
+  if (language !== "zh") {
     switch (value) {
       case "vertical_short_drama":
         return "vertical short drama";
@@ -524,9 +524,9 @@ function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh
   }
 }
 
-function summarizeSourceForSpec(sourceText: string | undefined, language: "zh" | "en" = "zh"): string {
+function summarizeSourceForSpec(sourceText: string | undefined, language: "zh" | "en" | "vi" = "zh"): string {
   const text = sourceText?.replace(/\s+/g, " ").trim();
-  if (language === "en") {
+  if (language !== "zh") {
     if (!text) return "No full source material provided.";
     return `Full source material provided, about ${text.length} characters; the full content will be read during generation.`;
   }

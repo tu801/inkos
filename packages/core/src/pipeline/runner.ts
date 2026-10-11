@@ -83,7 +83,7 @@ function mergeChapterRevisionInstructions(
 export function buildSpinoffFoundationContext(
   parentCanon: string,
   direction: string | undefined,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): string {
   const dir = direction?.trim();
   if (language === "en") {
@@ -251,7 +251,7 @@ export class PipelineRunner {
   }
 
   private localize(language: LengthLanguage, messages: { zh: string; en: string }): string {
-    return language === "en" ? messages.en : messages.zh;
+    return language !== "zh" ? messages.en : messages.zh;
   }
 
   private async resolveBookLanguage(
@@ -270,7 +270,9 @@ export class PipelineRunner {
   }
 
   private languageFromLengthSpec(lengthSpec: Pick<LengthSpec, "countingMode">): LengthLanguage {
-    return lengthSpec.countingMode === "en_words" ? "en" : "zh";
+    if (lengthSpec.countingMode === "en_words") return "en";
+    if (lengthSpec.countingMode === "vi_words") return "vi";
+    return "zh";
   }
 
   private logStage(language: LengthLanguage, message: { zh: string; en: string }): void {
@@ -943,7 +945,9 @@ export class PipelineRunner {
       const chapterLengthTarget = chapterMeta.lengthTelemetry?.target ?? book.chapterWordCount;
       const lengthLanguage = chapterMeta.lengthTelemetry?.countingMode === "en_words"
         ? "en"
-        : language;
+        : chapterMeta.lengthTelemetry?.countingMode === "vi_words"
+          ? "vi"
+          : language;
       const lengthSpec = buildLengthSpec(
         chapterLengthTarget,
         lengthLanguage,

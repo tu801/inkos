@@ -17,7 +17,7 @@ export class FanficCanonImporter extends BaseAgent {
     sourceText: string,
     sourceName: string,
     fanficMode: FanficMode,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "en" | "vi" = "zh",
   ): Promise<FanficCanonOutput> {
     const source = await this.prepareSourceText(sourceText, sourceName, language);
     const systemPrompt = language === "en"
@@ -62,7 +62,7 @@ export class FanficCanonImporter extends BaseAgent {
   private async prepareSourceText(
     sourceText: string,
     sourceName: string,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): Promise<{ readonly text: string; readonly compiled: boolean }> {
     const budget = semanticInputBudget(this.ctx.client, { reservedOutputTokens: 16_384 });
     if (budget === undefined || estimateTextTokens(sourceText) <= budget) {

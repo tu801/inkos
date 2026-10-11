@@ -13,7 +13,7 @@ export interface ImportedChapterSource {
 
 export function renderCompleteImportSource(
   chapters: ReadonlyArray<ImportedChapterSource>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): string {
   return chapters.map((chapter, index) => language === "en"
     ? `Chapter ${index + 1}: ${chapter.title}\n\n${chapter.content}`
@@ -26,7 +26,7 @@ export async function compileImportSource(input: {
   readonly model: string;
   readonly projectRoot: string;
   readonly chapters: ReadonlyArray<ImportedChapterSource>;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly activeSkills?: ReadonlyArray<ActivatedSkillGuidance>;
   readonly signal?: AbortSignal;
 }): Promise<{ readonly markdown: string; readonly compiled: boolean; readonly chunkCount: number }> {

@@ -3,6 +3,7 @@ import type { WriteChapterOutput } from "../agents/writer.js";
 import type { ContextPackage } from "../models/input-governance.js";
 import type { LengthSpec } from "../models/length-governance.js";
 import { countChapterLength } from "../utils/length-metrics.js";
+import type { WritingLanguage } from "../utils/language.js";
 
 export interface ChapterReviewUsage {
   readonly promptTokens: number;
@@ -36,7 +37,7 @@ export async function reviewChapterDraft(params: {
       chapterNumber: number,
       genre: string | undefined,
       options: {
-        readonly language: "zh" | "en";
+        readonly language: WritingLanguage;
         readonly contextPackage: ContextPackage;
         readonly temperature?: number;
       },
@@ -56,13 +57,13 @@ export async function reviewChapterDraft(params: {
       params.chapterNumber,
       params.book.genre,
       {
-        language: params.lengthSpec.countingMode === "en_words" ? "en" : "zh",
+        language: params.lengthSpec.countingMode === "en_words" ? "en" : params.lengthSpec.countingMode === "vi_words" ? "vi" : "zh",
         contextPackage: params.controlInput.contextPackage,
         temperature: 0.3,
       },
     );
   } catch (error) {
-    const isEnglish = params.lengthSpec.countingMode === "en_words";
+    const isEnglish = params.lengthSpec.countingMode !== "zh_chars";
     modelReview = {
       unavailable: true,
       observations: [{

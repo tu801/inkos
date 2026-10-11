@@ -158,6 +158,7 @@ import {
   type AgentSessionAttachment,
   type ActionResult,
   type ConfirmedCapabilityBinding,
+  normalizeWritingLanguage,
 } from "@actalk/inkos-core";
 import { isConfirmedProductionAction } from "../shared/confirmed-production.js";
 import { summarizeToolResult } from "../shared/tool-result.js";
@@ -175,14 +176,14 @@ import {
 
 // -- Studio server language (read per request from the project config's `language`) --
 
-type StudioLanguage = "zh" | "en";
+type StudioLanguage = "zh" | "en" | "vi";
 
 function normalizeStudioLanguage(value: unknown): StudioLanguage {
-  return value === "en" ? "en" : "zh";
+  return value === "en" || value === "vi" ? value : "zh";
 }
 
 function pick(lang: StudioLanguage, zh: string, en: string): string {
-  return lang === "en" ? en : zh;
+  return lang === "zh" ? zh : en;
 }
 
 async function resolveStudioProfileSkills(
@@ -2931,7 +2932,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       createBook: {
         title: body.title,
         ...(body.genre ? { genre: body.genre } : {}),
-        ...(body.language === "en" || body.language === "zh" ? { language: body.language } : {}),
+        ...(body.language === "en" || body.language === "zh" || body.language === "vi" ? { language: body.language } : {}),
         ...(body.platform ? { platform: normalizeStudioPlatform(body.platform) } : {}),
         ...(body.chapterWordCount ? { chapterWordCount: body.chapterWordCount } : {}),
         ...(body.targetChapters ? { targetChapters: body.targetChapters } : {}),
@@ -2939,7 +2940,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
     };
     const tool = createBookFoundationTool(pipeline, {
       actionPayload,
-      language: body.language === "en" ? "en" : "zh",
+      language: normalizeStudioLanguage(body.language),
       workerSkills: () => foundationSkills,
     });
     const binding = confirmedCapabilityBinding("create_book")!;
@@ -2952,7 +2953,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         title: body.title,
         ...(body.genre ? { genre: body.genre } : {}),
         ...(body.platform ? { platform: normalizeStudioPlatform(body.platform) } : {}),
-        ...(body.language === "en" || body.language === "zh" ? { language: body.language } : {}),
+        ...(body.language === "en" || body.language === "zh" || body.language === "vi" ? { language: body.language } : {}),
         ...(body.targetChapters ? { targetChapters: body.targetChapters } : {}),
         ...(body.chapterWordCount ? { chapterWordCount: body.chapterWordCount } : {}),
       },
@@ -3088,7 +3089,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         state.loadBookConfig(id),
         buildPipelineConfig({ bookIdForSettings: id }),
       ]);
-      const language = book.language === "en" ? "en" : "zh";
+      const language = book.language;
       const requestedBrief = typeof body.brief === "string" ? body.brief.trim() : "";
       const inspirationSkills = await hydrateActivatedSkillGuidance(
         await resolveStudioProfileSkills(root, "longform-novel", { includeRecommended: true }),
@@ -3100,20 +3101,20 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         appendActivatedSkillGuidance([
           {
             role: "system",
-            content: language === "en"
-              ? "Generate one optional Markdown inspiration card for revising the supplied chapter with the activated Skills. This is read-only advice: do not rewrite the chapter, alter canon, or claim persistence."
+            content: language !== "zh"
+              ? `${language === "vi" ? "Write the entire response in natural Vietnamese.\n\n" : ""}Generate one optional Markdown inspiration card for revising the supplied chapter with the activated Skills. This is read-only advice: do not rewrite the chapter, alter canon, or claim persistence.`
               : "按已激活的 Skills，为所给章节生成一张可选的 Markdown 修订灵感卡。这是只读建议：不要代写整章、改变正典或声称已经落盘。",
           },
           {
             role: "user",
             content: [
-              language === "en" ? `Book: ${book.title}` : `书名：${book.title}`,
-              language === "en" ? `Chapter: ${num}` : `章节：第${num}章`,
+              language !== "zh" ? `Book: ${book.title}` : `书名：${book.title}`,
+              language !== "zh" ? `Chapter: ${num}` : `章节：第${num}章`,
               requestedBrief || persistedBrief
-                ? `${language === "en" ? "Current user brief" : "当前用户提示"}:\n${requestedBrief || persistedBrief}`
+                ? `${language !== "zh" ? "Current user brief" : "当前用户提示"}:\n${requestedBrief || persistedBrief}`
                 : "",
-              plan ? `${language === "en" ? "Generated chapter plan" : "系统章节计划"}:\n${plan}` : "",
-              `${language === "en" ? "Current chapter" : "当前章节"}:\n${chapter}`,
+              plan ? `${language !== "zh" ? "Generated chapter plan" : "系统章节计划"}:\n${plan}` : "",
+              `${language !== "zh" ? "Current chapter" : "当前章节"}:\n${chapter}`,
             ].filter(Boolean).join("\n\n"),
           },
         ], inspirationSkills),
@@ -4122,7 +4123,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       if (updates.stream !== undefined) {
         existing.llm.stream = updates.stream;
       }
-      if (updates.language === "zh" || updates.language === "en") {
+      if (updates.language === "zh" || updates.language === "en" || updates.language === "vi") {
         existing.language = updates.language;
       }
       const { writeFile: writeFileFs } = await import("node:fs/promises");
@@ -4801,8 +4802,8 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
           else throw new ApiError(404, "BOOK_NOT_FOUND", `Book not found: ${agentBookId}`);
         }
       }
-      const configLanguage = config.language === "en" ? "en" : "zh";
-      const bookLanguage = activeBookConfig?.language === "en" ? "en" : activeBookConfig?.language === "zh" ? "zh" : undefined;
+      const configLanguage = normalizeStudioLanguage(config.language);
+      const bookLanguage = activeBookConfig?.language === "en" || activeBookConfig?.language === "zh" || activeBookConfig?.language === "vi" ? activeBookConfig.language : undefined;
       const requestedLanguage = actionPayload?.shortRun?.language ?? actionPayload?.createBook?.language;
       const surfaceLanguage = agentBookId
         ? (bookLanguage ?? configLanguage)
@@ -5527,7 +5528,8 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
   // --- Language setup ---
 
   app.post("/api/v1/project/language", async (c) => {
-    const { language } = await c.req.json<{ language: "zh" | "en" }>();
+    const { language } = await c.req.json<{ language: StudioLanguage }>();
+    if (!normalizeWritingLanguage(language)) return c.json({ error: `Unsupported language: ${language}` }, 400);
     const configPath = join(root, "inkos.json");
     try {
       const raw = await readFile(configPath, "utf-8");
@@ -5817,7 +5819,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         ...(updates.chapterWordCount !== undefined ? { chapterWordCount: Number(updates.chapterWordCount) } : {}),
         ...(updates.targetChapters !== undefined ? { targetChapters: Number(updates.targetChapters) } : {}),
         ...(updates.status !== undefined ? { status: updates.status as typeof book.status } : {}),
-        ...(updates.language !== undefined ? { language: updates.language as "zh" | "en" } : {}),
+        ...(updates.language !== undefined ? { language: normalizeWritingLanguage(updates.language) ?? book.language } : {}),
         updatedAt: new Date().toISOString(),
       };
       await state.saveBookConfig(id, updated);
@@ -5915,7 +5917,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
   // --- Style Analyze ---
 
   app.post("/api/v1/style/analyze", async (c) => {
-    const { text, sourceName, language } = await c.req.json<{ text: string; sourceName: string; language?: "zh" | "en" }>();
+    const { text, sourceName, language } = await c.req.json<{ text: string; sourceName: string; language?: StudioLanguage }>();
     if (!text?.trim()) return c.json({ error: "text is required" }, 400);
 
     try {
@@ -5927,7 +5929,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         projectRoot: root,
         referenceText: text,
         sourceName: sourceName ?? "unknown",
-        language: language ?? (config.language === "en" ? "en" : "zh"),
+        language: language ?? normalizeStudioLanguage(config.language),
       });
       return c.json({ guide });
     } catch (e) {
@@ -6091,7 +6093,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       targetChapters: body.targetChapters ?? 100,
       chapterWordCount: body.chapterWordCount ?? 3000,
       fanficMode: body.mode?.trim() || "canon",
-      ...(body.language ? { language: body.language as "zh" | "en" } : {}),
+      ...(normalizeWritingLanguage(body.language) ? { language: normalizeWritingLanguage(body.language)! } : {}),
       createdAt: now,
       updatedAt: now,
     };
@@ -6157,7 +6159,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
     } catch {
       return c.json({ error: `Parent book "${body.parentBookId}" not found` }, 404);
     }
-    const language = (body.language ?? parent.language) as "zh" | "en" | undefined;
+    const language = normalizeWritingLanguage(body.language) ?? parent.language;
     const now = new Date().toISOString();
     const bookConfig = buildStudioBookConfig({
       title: body.title,
@@ -6229,7 +6231,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       platform: body.platform,
       targetChapters: body.targetChapters,
       chapterWordCount: body.chapterWordCount,
-      ...(body.language ? { language: body.language as "zh" | "en" } : {}),
+      ...(normalizeWritingLanguage(body.language) ? { language: normalizeWritingLanguage(body.language)! } : {}),
     }, now);
     const bookId = bookConfig.id;
     if (!bookId) {
