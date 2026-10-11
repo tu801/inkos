@@ -51,6 +51,17 @@ describe("buildStudioBookConfig", () => {
     expect(config.language).toBe("en");
     expect(config.id).toBe("english-book");
   });
+
+  it("preserves Vietnamese and uses a word-based chapter default", () => {
+    const config = buildStudioBookConfig({
+      title: "Mùa Mưa Cuối Phố",
+      genre: "other",
+      language: "vi",
+    }, "2026-10-11T00:00:00.000Z");
+
+    expect(config.language).toBe("vi");
+    expect(config.chapterWordCount).toBe(2000);
+  });
 });
 
 describe("waitForStudioBookReady", () => {

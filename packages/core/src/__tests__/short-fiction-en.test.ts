@@ -101,6 +101,16 @@ describe("short-fiction English prompt branch", () => {
     expect(prompt).toContain("650 words per chapter");
   });
 
+  it("uses the Latin control template but requires Vietnamese output for vi", () => {
+    const systemPrompt = buildShortFictionWriterSystemPrompt("vi");
+    const userPrompt = buildShortFictionWriterUserPrompt(DRAFT_INPUT, "vi");
+
+    expect(systemPrompt).toContain("Toàn bộ nội dung đầu ra phải viết bằng tiếng Việt");
+    expect(systemPrompt).toContain("short-fiction BatchWriter");
+    expect(CJK.test(systemPrompt)).toBe(false);
+    expect(userPrompt).toContain("650 words per chapter");
+  });
+
   it("keeps the zh default identical to the explicit zh branch", () => {
     expect(buildShortFictionWriterSystemPrompt()).toBe(buildShortFictionWriterSystemPrompt("zh"));
     expect(buildShortFictionOutlineSystemPrompt()).toBe(buildShortFictionOutlineSystemPrompt("zh"));

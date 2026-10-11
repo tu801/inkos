@@ -402,7 +402,7 @@ function compactPlayStartPayload(value: ProposeActionParamsType["playStart"]): N
 
 function proposedActionPayload(
   params: ProposeActionParamsType,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): ActionPayload | undefined {
   const payload: ActionPayload = {};
   if (params.action === "create_book") {
@@ -490,7 +490,7 @@ function assertExecutableProposedAction(params: ProposeActionParamsType, payload
 }
 
 export function createProposeActionTool(
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
   options: ProposeActionToolOptions = {},
 ): AgentTool<typeof ProposeActionParams> {
   return {
@@ -667,7 +667,7 @@ export function createSubAgentTool(
   options: {
     readonly actionPayload?: ActionPayload;
     readonly architectCreateOnly?: boolean;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
   } = {},
 ): AgentTool<any> {
   const sessionIsZh = (options.language ?? "zh") !== "en";
@@ -1332,7 +1332,7 @@ type ShortFictionRunParamsType = Static<typeof ShortFictionRunParams>;
 // 抛出带合法范围的双语错误，不让任务开跑后才在 runner 中途失败。
 function assertShortRunCharsPerChapter(
   value: number | undefined,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): void {
   if (value === undefined) return;
   const { min, max } = shortRunCharsPerChapterRange(language);
@@ -1343,7 +1343,7 @@ function assertShortRunCharsPerChapter(
 export function createShortFictionRunTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
 ): AgentTool<typeof ShortFictionRunParams> {
   return {
     name: "short_fiction_run",
@@ -1535,7 +1535,7 @@ type ScriptCreateParamsType = Static<typeof ScriptCreateParams>;
 export function createScriptCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
 ): AgentTool<typeof ScriptCreateParams> {
   return {
     name: "script_create",
@@ -1626,7 +1626,7 @@ type StoryboardCreateParamsType = Static<typeof StoryboardCreateParams>;
 export function createStoryboardCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
 ): AgentTool<typeof StoryboardCreateParams> {
   return {
     name: "storyboard_create",
@@ -1723,7 +1723,7 @@ type InteractiveFilmCreateParamsType = Static<typeof InteractiveFilmCreateParams
 export function createInteractiveFilmCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" | "vi" } = {},
 ): AgentTool<typeof InteractiveFilmCreateParams> {
   return {
     name: "interactive_film_create",
@@ -1950,7 +1950,7 @@ export function createPlayStartTool(
       await store.ensureRun(world.id, runId);
 
       const existingTranscript = await store.readTranscript(world.id, runId);
-      const sceneText = (initialScene?.trim() || (world.language === "en"
+      const sceneText = (initialScene?.trim() || (world.language !== "zh"
         ? [`You enter "${world.title}".`, world.premise || "The scene is set. Make your first move."].join("\n")
         : [`你进入「${world.title}」。`, world.premise || "场景已经就位，等待你的第一个动作。"].join("\n"))).trim();
       if (existingTranscript.length === 0) {
@@ -2036,7 +2036,7 @@ const PlayStepParams = Type.Object({
 type PlayStepParamsType = Static<typeof PlayStepParams>;
 
 export interface PlayStepToolOptions {
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
     readonly worldId: string;
@@ -2067,7 +2067,7 @@ const PlayReviseParams = Type.Object({
 type PlayReviseParamsType = Static<typeof PlayReviseParams>;
 
 export interface PlayReviseToolOptions {
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
     readonly worldId: string;
@@ -2158,7 +2158,7 @@ type PlayEditParamsType = Static<typeof PlayEditParams>;
 export function createPlayEditTool(
   projectRoot: string,
   sessionId: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): AgentTool<typeof PlayEditParams> {
   return {
     name: "play_edit",
@@ -2177,12 +2177,12 @@ export function createPlayEditTool(
       const world = await store.loadWorld(worldId);
       if (!world) {
         return textResult(
-          language === "en"
+          (language ?? "zh") !== "zh"
             ? "There is no interactive world to edit yet. Start one with play_start first."
             : "还没有可编辑的互动世界。先用 play_start 开一局。",
         );
       }
-      const isZh = (world.language ?? "zh") !== "en";
+      const isZh = (world.language ?? "zh") === "zh";
 
       const patch: Parameters<PlayStore["updateWorld"]>[1] = {};
       const nextWorldContract = mergeContract(
@@ -2282,7 +2282,7 @@ export function createPlayStepTool(
       const world = await store.loadWorld(worldId);
       if (!world) {
         return textResult(
-          options.language === "en"
+          (options.language ?? "zh") !== "zh"
             ? "There is no interactive world to advance yet. Start one with play_start first."
             : "还没有可推进的互动世界。先用 play_start 开一局。",
         );
@@ -2377,12 +2377,12 @@ export function createPlayReviseTool(
       const world = await store.loadWorld(worldId);
       if (!world) {
         return textResult(
-          options.language === "en"
+          (options.language ?? "zh") !== "zh"
             ? "There is no interactive world to redo yet. Start one with play_start first."
             : "还没有可重做的互动世界。先用 play_start 开一局。",
         );
       }
-      const isZh = (world.language ?? "zh") !== "en";
+      const isZh = (world.language ?? "zh") === "zh";
       const ctx = pipeline.createAgentContext("play");
       const runner = options.runnerFactory?.({ projectRoot, worldId, runId, ctx }) ?? new PlayRunner({
         projectRoot,

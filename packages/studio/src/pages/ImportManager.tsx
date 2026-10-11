@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { WritingLanguage } from "@actalk/inkos-core";
 import { fetchJson, invalidateApiPaths, useApi, postApi } from "../hooks/use-api";
 import type { Theme } from "../hooks/use-theme";
 import type { TFunction } from "../hooks/use-i18n";
@@ -39,7 +40,7 @@ export function ImportManager({ nav, theme, t, initialTab }: { nav: Nav; theme: 
   const [ffText, setFfText] = useState("");
   const [ffMode, setFfMode] = useState("canon");
   const [ffGenre, setFfGenre] = useState("other");
-  const [ffLang, setFfLang] = useState(lang);
+  const [ffLang, setFfLang] = useState<WritingLanguage>(lang);
 
   // Spinoff (番外) state
   const [spTitle, setSpTitle] = useState("");
@@ -51,7 +52,7 @@ export function ImportManager({ nav, theme, t, initialTab }: { nav: Nav; theme: 
   const [imRef, setImRef] = useState("");
   const [imIdea, setImIdea] = useState("");
   const [imGenre, setImGenre] = useState("other");
-  const [imLang, setImLang] = useState(lang);
+  const [imLang, setImLang] = useState<WritingLanguage>(lang);
 
   useEffect(() => {
     if (initialTab) {
@@ -255,10 +256,11 @@ export function ImportManager({ nav, theme, t, initialTab }: { nav: Nav; theme: 
                 <option value="urban">{tr("都市", "Urban")}</option>
                 <option value="xianxia">{tr("仙侠", "Xianxia")}</option>
               </select>
-              <select value={ffLang} onChange={(e) => setFfLang(e.target.value as "zh" | "en")}
+              <select value={ffLang} onChange={(e) => setFfLang(e.target.value as "zh" | "en" | "vi")}
                 className="px-3 py-2 rounded-lg bg-secondary/30 border border-border text-sm">
                 <option value="zh">{tr("中文", "Chinese")}</option>
                 <option value="en">English</option>
+                <option value="vi">Tiếng Việt</option>
               </select>
             </div>
             <textarea value={ffText} onChange={(e) => setFfText(e.target.value)} rows={10}
@@ -310,10 +312,11 @@ export function ImportManager({ nav, theme, t, initialTab }: { nav: Nav; theme: 
                 <option value="urban">{tr("都市", "Urban")}</option>
                 <option value="xianxia">{tr("仙侠", "Xianxia")}</option>
               </select>
-              <select value={imLang} onChange={(e) => setImLang(e.target.value as "zh" | "en")}
+              <select value={imLang} onChange={(e) => setImLang(e.target.value as "zh" | "en" | "vi")}
                 className="px-3 py-2 rounded-lg bg-secondary/30 border border-border text-sm">
                 <option value="zh">{tr("中文", "Chinese")}</option>
                 <option value="en">English</option>
+                <option value="vi">Tiếng Việt</option>
               </select>
             </div>
             <textarea value={imIdea} onChange={(e) => setImIdea(e.target.value)} rows={4}

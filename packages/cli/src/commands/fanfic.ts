@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, resolve, basename } from "node:path";
-import { deriveBookIdFromTitle, normalizePlatformOrOther, PipelineRunner, type BookConfig, type FanficMode } from "@actalk/inkos-core";
+import { defaultChapterLength, deriveBookIdFromTitle, normalizePlatformOrOther, normalizeWritingLanguage, PipelineRunner, type BookConfig, type FanficMode } from "@actalk/inkos-core";
 import { loadConfig, buildPipelineConfig, findProjectRoot, resolveBookId, log, logError } from "../utils.js";
 import {
   formatFanficCanonMissingError,
@@ -22,8 +22,8 @@ fanficCommand
   .option("--genre <genre>", "Genre", "other")
   .option("--platform <platform>", "Target platform", "other")
   .option("--target-chapters <n>", "Target chapter count", "100")
-  .option("--chapter-words <n>", "Words per chapter", "3000")
-  .option("--lang <language>", "Writing language: zh or en. Defaults from genre.")
+  .option("--chapter-words <n>", "Words/characters per chapter (language-native default)")
+  .option("--lang <language>", "Writing language: zh, en, or vi. Defaults from project.")
   .option("--json", "Output JSON")
   .action(async (opts) => {
     try {
@@ -45,6 +45,8 @@ fanficCommand
       }
 
       const bookId = deriveBookIdFromTitle(opts.title) || `book-${Date.now().toString(36)}`;
+      const language = normalizeWritingLanguage(opts.lang ?? config.language);
+      if (!language) throw new Error("lang must be zh, en, or vi.");
 
       const now = new Date().toISOString();
       const book: BookConfig = {
@@ -54,8 +56,10 @@ fanficCommand
         genre: opts.genre,
         status: "outlining",
         targetChapters: parseInt(opts.targetChapters, 10),
-        chapterWordCount: parseInt(opts.chapterWords, 10),
-        language: opts.lang ?? config.language,
+        chapterWordCount: opts.chapterWords === undefined
+          ? defaultChapterLength(language)
+          : parseInt(opts.chapterWords, 10),
+        language,
         createdAt: now,
         updatedAt: now,
         fanficMode: mode,

@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { access, readFile, rm } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { join, resolve } from "node:path";
-import { deriveBookIdFromTitle, normalizePlatformOrOther, PipelineRunner, StateManager, type BookConfig } from "@actalk/inkos-core";
+import { bootstrapStructuredStateFromMarkdown, defaultChapterLength, deriveBookIdFromTitle, normalizePlatformOrOther, normalizeWritingLanguage, PipelineRunner, StateManager, type BookConfig } from "@actalk/inkos-core";
 import {
   formatBookBackupCreated,
   formatBookBackupListEmpty,
@@ -27,9 +27,9 @@ bookCommand
   .option("--genre <genre>", "Genre", "xuanhuan")
   .option("--platform <platform>", "Target platform", "tomato")
   .option("--target-chapters <n>", "Target chapter count", "200")
-  .option("--chapter-words <n>", "Words per chapter", "3000")
+  .option("--chapter-words <n>", "Words/characters per chapter (defaults by language)")
   .option("--brief <path>", "Path to creative brief file (.md/.txt) — Architect builds from your ideas instead of generating from scratch")
-  .option("--lang <language>", "Writing language: zh (Chinese) or en (English). Defaults from genre.")
+  .option("--lang <language>", "Writing language: zh (Chinese), en (English), or vi (Vietnamese). Defaults from genre.")
   .option("--json", "Output JSON")
   .action(async (opts) => {
     try {
@@ -51,6 +51,11 @@ bookCommand
       }
 
       const config = await loadConfig();
+      const requestedLanguage = opts.lang ? normalizeWritingLanguage(opts.lang) : undefined;
+      if (opts.lang && !requestedLanguage) {
+        throw new Error(`Unsupported writing language: ${opts.lang}. Expected zh, en, or vi.`);
+      }
+      const writingLanguage = requestedLanguage ?? config.language;
       const now = new Date().toISOString();
       const book: BookConfig = {
         id: bookId,
@@ -59,8 +64,10 @@ bookCommand
         genre: opts.genre,
         status: "outlining",
         targetChapters: parseInt(opts.targetChapters, 10),
-        chapterWordCount: parseInt(opts.chapterWords, 10),
-        language: opts.lang ?? config.language,
+        chapterWordCount: opts.chapterWords
+          ? parseInt(opts.chapterWords, 10)
+          : defaultChapterLength(writingLanguage),
+        language: writingLanguage,
         createdAt: now,
         updatedAt: now,
       };
@@ -109,7 +116,7 @@ bookCommand
   .option("--chapter-words <n>", "Words per chapter")
   .option("--target-chapters <n>", "Target chapter count")
   .option("--status <status>", "Book status (outlining/active/paused/completed)")
-  .option("--lang <language>", "Writing language: zh or en")
+  .option("--lang <language>", "Writing language: zh, en, or vi")
   .option("--json", "Output JSON")
   .action(async (bookIdArg: string | undefined, opts) => {
     try {
@@ -122,7 +129,11 @@ bookCommand
       if (opts.chapterWords) updates.chapterWordCount = parseInt(opts.chapterWords, 10);
       if (opts.targetChapters) updates.targetChapters = parseInt(opts.targetChapters, 10);
       if (opts.status) updates.status = opts.status;
-      if (opts.lang) updates.language = opts.lang;
+      if (opts.lang) {
+        const language = normalizeWritingLanguage(opts.lang);
+        if (!language) throw new Error(`Unsupported writing language: ${opts.lang}. Expected zh, en, or vi.`);
+        updates.language = language;
+      }
 
       if (Object.keys(updates).length === 0) {
         if (opts.json) {
@@ -143,6 +154,9 @@ bookCommand
         updatedAt: new Date().toISOString(),
       };
       await state.saveBookConfig(bookId, updated);
+      if (updates.language) {
+        await bootstrapStructuredStateFromMarkdown({ bookDir: state.bookDir(bookId) });
+      }
 
       if (opts.json) {
         log(JSON.stringify(updated, null, 2));

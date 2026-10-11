@@ -1,4 +1,11 @@
-export type ShortFictionLanguage = "zh" | "en";
+import { languageOutputInstruction } from "../utils/language.js";
+
+export type ShortFictionLanguage = "zh" | "en" | "vi";
+
+function shortLanguageInstruction(language: ShortFictionLanguage): string[] {
+  const instruction = languageOutputInstruction(language);
+  return instruction ? [instruction, ""] : [];
+}
 
 export interface ShortFictionReferencePromptInput {
   readonly text?: string;
@@ -53,8 +60,9 @@ export interface ShortFictionPackagePromptInput {
 }
 
 export function buildShortFictionOutlineSystemPrompt(language: ShortFictionLanguage = "zh"): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
+      ...shortLanguageInstruction(language),
       "You are the managing editor for short web fiction. Your job is to turn one creative direction into a complete short-story plan.",
       "Work only from this direction and any reference text the user supplied; never claim to have read, quoted, or inherited material that was not provided.",
       "Content comes first: the title, the opening, the pressure on the protagonist, the evidence/relationship/identity leverage, the escalation chain, the reversal chain, and the payoff landing must be strong enough to carry a single-pass full draft.",
@@ -75,7 +83,7 @@ export function buildShortFictionOutlineUserPrompt(
   input: ShortFictionOutlinePromptInput,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Creative Direction",
       input.direction,
@@ -118,8 +126,9 @@ export function buildShortFictionOutlineUserPrompt(
 }
 
 export function buildShortFictionOutlineReviewSystemPrompt(language: ShortFictionLanguage = "zh"): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
+      ...shortLanguageInstruction(language),
       "You are a short-fiction outline reviewer. You do not assign scores and you do not police plagiarism.",
       "Your job is to judge whether this story plan can carry a single-pass full draft: is the genre engine clear, do character motivations hold, does the pressure chain escalate, is the antagonist's counterattack believable, is the ending payoff big enough.",
       "Review like a real reader and a real editor, not a checklist machine.",
@@ -138,7 +147,7 @@ export function buildShortFictionOutlineReviewUserPrompt(
   input: ShortFictionOutlineReviewPromptInput,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Creative Direction",
       input.direction,
@@ -176,7 +185,7 @@ export function buildShortFictionOutlineRevisionFollowup(
   input: ShortFictionOutlineRevisionPromptInput,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "Based on the outline review above, produce the complete second version of the story plan.",
       "This is round two of the same project: do not start over from scratch, and do not output a list of edits instead of the plan.",
@@ -211,8 +220,9 @@ export function buildShortFictionOutlineRevisionFollowup(
 }
 
 export function buildShortFictionWriterSystemPrompt(language: ShortFictionLanguage = "zh"): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
+      ...shortLanguageInstruction(language),
       "You are an English short-fiction BatchWriter. You write the complete short story in one API pass, following the story plan.",
       "Write natural, native English prose. Vary sentence length; mix short punchy sentences with longer flowing ones, and keep the narrative voice consistent throughout.",
       "This is not serialized-novel continuation and not chapter synopsis. Every chapter needs drama happening on the page: character action, dialogue or reaction, a shift in the situation, and a reason to keep reading at the chapter break.",
@@ -236,7 +246,7 @@ export function buildShortFictionWriterUserPrompt(
   input: ShortFictionDraftPromptInput,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Task",
       `Write the complete ${input.chapterCount}-chapter story in one pass, about ${input.charsPerChapter} words per chapter.`,
@@ -301,7 +311,7 @@ export function buildShortFictionDraftContinuationUserPrompt(
   language: ShortFictionLanguage = "zh",
 ): string {
   const missing = input.missingChapters.join(", ");
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Task",
       `The previous draft was truncated or skipped chapters. Write ONLY the missing chapters: ${missing}.`,
@@ -356,8 +366,9 @@ export function buildShortFictionDraftContinuationUserPrompt(
 }
 
 export function buildShortFictionDraftReviewSystemPrompt(language: ShortFictionLanguage = "zh"): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
+      ...shortLanguageInstruction(language),
       "You are a short-fiction draft reviewer.",
       "You judge only whether the content can sell, reads smoothly, and keeps pulling the reader forward; do not turn the review into deterministic scoring.",
       "Focus on: the title, chapter titles, the opening, character motivation, the timeline, relationships, evidence and access, escalating pressure, the antagonist's counterattack, whether the back half sags, and whether the ending payoff lands.",
@@ -376,7 +387,7 @@ export function buildShortFictionDraftReviewUserPrompt(
   input: ShortFictionDraftReviewPromptInput,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Creative Direction",
       input.direction,
@@ -412,7 +423,7 @@ export function buildShortFictionDraftRevisionFollowup(
   input: ShortFictionDraftRevisionPromptInput,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "Based on the review notes, write the complete second-version draft.",
       "This is round two of the same story: keep what worked in the last version, fix what breaks immersion or kills the desire to keep reading.",
@@ -475,8 +486,9 @@ export function buildShortFictionDraftRevisionFollowup(
 }
 
 export function buildShortFictionPackageSystemPrompt(language: ShortFictionLanguage = "zh"): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
+      ...shortLanguageInstruction(language),
       "You are a short-fiction packaging editor. From the final draft you produce the synopsis, the selling points, and the cover-image prompt.",
       "Never invent a main title different from the draft's. All packaging must revolve around the draft's actual title and plot.",
       "Think of the cover prompt as a mobile portrait book cover: 3:4 vertical, a large title zone, strong character emotion, one or two instantly recognizable props, high-contrast colors — not a movie poster.",
@@ -493,7 +505,7 @@ export function buildShortFictionPackageUserPrompt(
   input: ShortFictionPackagePromptInput,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Creative Direction",
       input.direction,
@@ -538,7 +550,7 @@ export function buildShortFictionPackageUserPrompt(
 }
 
 function buildShortFictionCraftPrompt(language: ShortFictionLanguage = "zh"): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Craft Reminders",
       "- Salt dissolves in the soup: values and ambition show through action, never through slogans.",

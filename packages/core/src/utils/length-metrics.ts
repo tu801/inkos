@@ -1,6 +1,7 @@
 import type { LengthCountingMode, LengthNormalizeMode, LengthSpec } from "../models/length-governance.js";
+import type { WritingLanguage } from "./language.js";
 
-export type LengthLanguage = "zh" | "en";
+export type LengthLanguage = WritingLanguage;
 
 const REFERENCE_TARGET = 2200;
 const SOFT_RANGE_DELTA = 300;
@@ -11,9 +12,11 @@ const HARD_RANGE_DELTA = 600;
 // 3000 read as English words runs ~50% long, and the hard-range guard then force-expands correct chapters.
 export const DEFAULT_CHAPTER_LENGTH_ZH = 3000;
 export const DEFAULT_CHAPTER_LENGTH_EN = 2000;
+export const DEFAULT_CHAPTER_LENGTH_VI = 2000;
 
 export function defaultChapterLength(language: LengthLanguage = "zh"): number {
-  return language === "en" ? DEFAULT_CHAPTER_LENGTH_EN : DEFAULT_CHAPTER_LENGTH_ZH;
+  if (language === "zh") return DEFAULT_CHAPTER_LENGTH_ZH;
+  return language === "vi" ? DEFAULT_CHAPTER_LENGTH_VI : DEFAULT_CHAPTER_LENGTH_EN;
 }
 
 export function countChapterLength(
@@ -27,20 +30,29 @@ export function countChapterLength(
     return words?.length ?? 0;
   }
 
+  if (countingMode === "vi_words") {
+    const words = normalized.match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu);
+    return words?.length ?? 0;
+  }
+
   return normalized.replace(/\s+/g, "").length;
 }
 
 export function resolveLengthCountingMode(
   language: LengthLanguage = "zh",
 ): LengthCountingMode {
-  return language === "en" ? "en_words" : "zh_chars";
+  if (language === "en") return "en_words";
+  if (language === "vi") return "vi_words";
+  return "zh_chars";
 }
 
 export function formatLengthCount(
   count: number,
   countingMode: LengthCountingMode,
 ): string {
-  return countingMode === "en_words" ? `${count} words` : `${count}字`;
+  if (countingMode === "en_words") return `${count} words`;
+  if (countingMode === "vi_words") return `${count} từ`;
+  return `${count}字`;
 }
 
 export function buildLengthSpec(

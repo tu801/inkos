@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { appendInteractionEvent } from "./session.js";
 import type { InteractionRequest } from "./intents.js";
+import { normalizeWritingLanguage, type WritingLanguage } from "../utils/language.js";
 import type { InteractionRuntimeTools } from "./runtime.js";
 import { runInteractionRequest } from "./runtime.js";
 import {
@@ -44,7 +45,7 @@ async function processProjectInteractionRequestInternal(params: {
         status: "failed",
         bookId: sessionWithBook.activeBookId,
         chapterNumber: sessionWithBook.activeChapterNumber,
-        stageLabel: localizedRequest.language === "en" ? `failed ${localizedRequest.intent}` : `执行失败：${localizedRequest.intent}`,
+        stageLabel: localizedRequest.language !== "zh" ? `failed ${localizedRequest.intent}` : `执行失败：${localizedRequest.intent}`,
       },
     }, {
       kind: "task.failed",
@@ -70,7 +71,7 @@ export async function processProjectInteractionRequest(params: {
 
 function attachRequestLanguage(
   request: InteractionRequest,
-  language: "zh" | "en" | undefined,
+  language: WritingLanguage | undefined,
 ): InteractionRequest {
   if (request.language || !language) {
     return request;
@@ -82,11 +83,11 @@ function attachRequestLanguage(
   };
 }
 
-async function detectProjectInteractionLanguage(projectRoot: string): Promise<"zh" | "en" | undefined> {
+async function detectProjectInteractionLanguage(projectRoot: string): Promise<WritingLanguage | undefined> {
   try {
     const raw = await readFile(join(projectRoot, "inkos.json"), "utf-8");
     const parsed = JSON.parse(raw) as { language?: string };
-    return parsed.language === "en" ? "en" : parsed.language === "zh" ? "zh" : undefined;
+    return normalizeWritingLanguage(parsed.language);
   } catch {
     return undefined;
   }

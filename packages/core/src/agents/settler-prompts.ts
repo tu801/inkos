@@ -1,15 +1,16 @@
 import type { BookConfig } from "../models/book.js";
 import type { GenreProfile } from "../models/genre-profile.js";
 import type { BookRules } from "../models/book-rules.js";
+import { languageOutputInstruction, promptBaseLanguage } from "../utils/language.js";
 
 export function buildSettlerSystemPrompt(
   book: BookConfig,
   genreProfile: GenreProfile,
   bookRules: BookRules | null,
-  language?: "zh" | "en",
+  language?: "zh" | "en" | "vi",
 ): string {
   const resolvedLang = language ?? genreProfile.language;
-  const isEnglish = resolvedLang === "en";
+  const isEnglish = promptBaseLanguage(resolvedLang) === "en";
   const numericalBlock = genreProfile.numericalSystem
     ? `\n- 本题材有数值/资源体系，你必须在 UPDATED_LEDGER 中追踪正文中出现的所有资源变动
 - 数值验算铁律：期初 + 增量 = 期末，三项必须可验算`
@@ -32,7 +33,7 @@ export function buildSettlerSystemPrompt(
     : "";
 
   const langPrefix = isEnglish
-    ? `【LANGUAGE OVERRIDE】ALL output (state card, hooks, summaries, subplots, emotional arcs, character matrix) MUST be in English. The === TAG === markers remain unchanged.\n\n`
+    ? `${languageOutputInstruction(resolvedLang)}\nAll output sections (state card, hooks, summaries, subplots, emotional arcs, character matrix) must use that language. The === TAG === markers remain unchanged.\n\n`
     : "";
 
   return `${langPrefix}你是状态追踪分析师。给定新章节正文和当前 truth 文件，你的任务是产出更新后的 truth 文件。

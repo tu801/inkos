@@ -192,7 +192,7 @@ function preferRicherText(primary: string, fallback: string): string {
 
 function applyCurrentStatePatch(
   currentState: CurrentStateState,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
   delta: RuntimeStateDelta,
 ): CurrentStateState {
   if (!delta.currentStatePatch) {
@@ -203,7 +203,7 @@ function applyCurrentStatePatch(
   }
 
   const nextFacts = [...currentState.facts];
-  const labels = language === "en"
+  const labels = language !== "zh"
     ? {
       currentLocation: ["Current Location", "当前位置"],
       protagonistState: ["Protagonist State", "主角状态"],

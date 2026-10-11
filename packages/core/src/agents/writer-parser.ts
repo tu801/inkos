@@ -56,7 +56,7 @@ function fallbackExtractContent(raw: string, countingMode: LengthCountingMode): 
     return headingMatch[1]!.trim();
   }
 
-  if (countingMode === "en_words") {
+  if (countingMode !== "zh_chars") {
     const englishHeadingMatch = raw.match(/^#\s*Chapter\s+\d+(?::|\s+)([^\n]*)\n+([\s\S]+)/im);
     if (englishHeadingMatch) {
       return englishHeadingMatch[2]!.trim();
@@ -69,7 +69,7 @@ function fallbackExtractContent(raw: string, countingMode: LengthCountingMode): 
     return labelMatch[1]!.trim();
   }
 
-  if (countingMode === "en_words") {
+  if (countingMode !== "zh_chars") {
     const englishLabelMatch = raw.match(/(?:content|chapter content)[：:]\s*\n+([\s\S]+)/i);
     if (englishLabelMatch) {
       return englishLabelMatch[1]!.trim();
@@ -103,7 +103,7 @@ function fallbackExtractTitle(
   if (headingMatch) {
     return headingMatch[1]!.trim();
   }
-  if (countingMode === "en_words") {
+  if (countingMode !== "zh_chars") {
     const englishHeadingMatch = raw.match(/^#\s*Chapter\s+\d+(?::|\s+)\s*(.+)/im);
     if (englishHeadingMatch) {
       return englishHeadingMatch[1]!.trim();
@@ -162,17 +162,19 @@ function defaultChapterTitle(
   chapterNumber: number,
   countingMode: LengthCountingMode,
 ): string {
-  return countingMode === "en_words" ? `Chapter ${chapterNumber}` : `第${chapterNumber}章`;
+  return countingMode === "vi_words"
+    ? `Chương ${chapterNumber}`
+    : countingMode === "en_words" ? `Chapter ${chapterNumber}` : `第${chapterNumber}章`;
 }
 
 function defaultStatePlaceholder(countingMode: LengthCountingMode): string {
-  return countingMode === "en_words" ? "(state card not updated)" : "(状态卡未更新)";
+  return countingMode !== "zh_chars" ? "(state card not updated)" : "(状态卡未更新)";
 }
 
 function defaultLedgerPlaceholder(countingMode: LengthCountingMode): string {
-  return countingMode === "en_words" ? "(ledger not updated)" : "(账本未更新)";
+  return countingMode !== "zh_chars" ? "(ledger not updated)" : "(账本未更新)";
 }
 
 function defaultHooksPlaceholder(countingMode: LengthCountingMode): string {
-  return countingMode === "en_words" ? "(hooks pool not updated)" : "(伏笔池未更新)";
+  return countingMode !== "zh_chars" ? "(hooks pool not updated)" : "(伏笔池未更新)";
 }

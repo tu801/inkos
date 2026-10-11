@@ -19,6 +19,28 @@ describe("runtime-state-store memory helpers", () => {
     }
   });
 
+  it("synchronizes a legacy manifest language from book.json", async () => {
+    root = await mkdtemp(join(tmpdir(), "inkos-runtime-language-"));
+    const bookDir = join(root, "book");
+    const stateDir = join(bookDir, "story", "state");
+    await mkdir(stateDir, { recursive: true });
+    await writeFile(join(bookDir, "book.json"), JSON.stringify({ language: "vi" }), "utf-8");
+    await writeFile(join(stateDir, "manifest.json"), JSON.stringify({
+      schemaVersion: 2,
+      language: "en",
+      lastAppliedChapter: 0,
+      projectionVersion: 1,
+      migrationWarnings: [],
+    }), "utf-8");
+
+    const snapshot = await loadRuntimeStateSnapshot(bookDir);
+
+    expect(snapshot.manifest.language).toBe("vi");
+    expect(snapshot.manifest.migrationWarnings).toContain(
+      "manifest language synchronized from en to vi using book.json",
+    );
+  });
+
   it("prefers structured runtime state over stale markdown projections for narrative memory", async () => {
     root = await mkdtemp(join(tmpdir(), "inkos-runtime-state-store-"));
     const bookDir = join(root, "book");

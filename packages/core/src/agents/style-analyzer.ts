@@ -30,9 +30,9 @@ const EN_RHETORICAL_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re
 export function analyzeStyle(
   text: string,
   sourceName?: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): StyleProfile {
-  const isEn = language === "en";
+  const isEn = language !== "zh";
 
   const sentences = text
     .split(isEn ? /[.!?\n]+/ : /[。！？\n]/)
@@ -46,7 +46,7 @@ export function analyzeStyle(
 
   // Measure length in the language's native unit: words for English, characters for Chinese.
   const measure = (s: string): number =>
-    isEn ? (s.match(/[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?/g)?.length ?? 0) : s.replace(/\s+/g, "").length;
+    isEn ? (s.match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu)?.length ?? 0) : s.replace(/\s+/g, "").length;
 
   // Sentence length stats
   const sentenceLengths = sentences.map(measure);

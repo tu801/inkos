@@ -1,5 +1,6 @@
 import type { HookPayoffTiming } from "../models/runtime-state.js";
 import type { StoredHook } from "../state/memory-db.js";
+import { promptBaseLanguage, type WritingLanguage } from "./language.js";
 import {
   HOOK_ACTIVITY_THRESHOLDS,
   HOOK_PHASE_THRESHOLDS,
@@ -142,9 +143,9 @@ export function resolveHookPayoffTiming(params: {
 
 export function localizeHookPayoffTiming(
   timing: HookPayoffTiming,
-  language: "zh" | "en",
+  language: WritingLanguage,
 ): string {
-  return LABELS[language][timing];
+  return LABELS[promptBaseLanguage(language)][timing];
 }
 
 export function describeHookLifecycle(params: {

@@ -1,9 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { inferLanguage } from "../utils/language.js";
+import { localizeHookPayoffTiming } from "../utils/hook-lifecycle.js";
 
 describe("inferLanguage", () => {
   it("infers en for Latin-dominant briefs", () => {
     expect(inferLanguage("A detective investigates a murder in 1920s London.")).toBe("en");
+  });
+
+  it("infers vi from Vietnamese diacritics", () => {
+    expect(inferLanguage("Một thám tử điều tra vụ án trong thành phố cũ.")).toBe("vi");
+  });
+
+  it("localizes hook timing safely for vi", () => {
+    expect(localizeHookPayoffTiming("near-term", "vi")).toBe("near-term");
   });
 
   it("infers zh for Chinese briefs", () => {

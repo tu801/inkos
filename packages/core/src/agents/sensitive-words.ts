@@ -18,7 +18,7 @@ export interface SensitiveWordResult {
   readonly found: ReadonlyArray<SensitiveWordMatch>;
 }
 
-type SensitiveWordLanguage = "zh" | "en";
+type SensitiveWordLanguage = "zh" | "en" | "vi";
 
 // Political terms — severity "block"
 const POLITICAL_WORDS: ReadonlyArray<string> = [
@@ -73,7 +73,7 @@ export function analyzeSensitiveWords(
 ): SensitiveWordResult {
   const found: SensitiveWordMatch[] = [];
   const issues: AuditIssue[] = [];
-  const isEnglish = language === "en";
+  const isEnglish = language !== "zh";
   const joiner = isEnglish ? ", " : "、";
 
   // Check built-in word lists

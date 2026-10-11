@@ -260,7 +260,7 @@ export function Dashboard({ nav, sse, theme, t }: { nav: Nav; sse: { messages: R
                         book.status
                       }</span>
                     </div>
-                    {book.language === "en" && (
+                    {book.language !== "zh" && (
                       <span className="px-1.5 py-0.5 rounded border border-primary/20 text-primary text-[10px] font-bold">EN</span>
                     )}
                     {book.fanficMode && (

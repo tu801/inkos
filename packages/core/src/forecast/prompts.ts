@@ -1,7 +1,7 @@
 // Bilingual prompt builders for the narrative forecast agent, organized the
 // same way as prompts/short-fiction.ts: each builder switches on language.
 
-export type ForecastLanguage = "zh" | "en";
+export type ForecastLanguage = "zh" | "en" | "vi";
 
 export interface ForecastPromptInput {
   readonly contextMarkdown: string;
@@ -12,7 +12,7 @@ export interface ForecastPromptInput {
 }
 
 export function buildForecastSystemPrompt(language: ForecastLanguage): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "You are the narrative forecast assistant for a long-form novel.",
       "Task: starting from the canonical context and the author's divergence point, project several mutually isolated, non-canonical candidate futures for the author to compare.",
@@ -36,7 +36,7 @@ export function buildForecastSystemPrompt(language: ForecastLanguage): string {
 
 export function buildForecastUserPrompt(input: ForecastPromptInput, language: ForecastLanguage): string {
   const firstChapter = input.baseChapter + 1;
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       input.contextMarkdown,
       "",
@@ -67,7 +67,7 @@ export function buildForecastUserPrompt(input: ForecastPromptInput, language: Fo
 }
 
 export function buildForecastRepairPrompt(validationError: string, language: ForecastLanguage): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       `Your previous output failed validation: ${validationError}`,
       "Re-output the complete JSON object only, fixing the problem above. No explanations, no code fences.",
@@ -80,7 +80,7 @@ export function buildForecastRepairPrompt(validationError: string, language: For
 }
 
 function forecastJsonShape(firstChapter: number, language: ForecastLanguage): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "{",
       '  "branches": [',

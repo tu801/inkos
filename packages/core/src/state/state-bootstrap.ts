@@ -13,6 +13,7 @@ import {
 } from "../models/runtime-state.js";
 import type { Fact, StoredHook } from "./memory-db.js";
 import { normalizeHookPayoffTiming } from "../utils/hook-lifecycle.js";
+import { normalizeWritingLanguage, type WritingLanguage } from "../utils/language.js";
 import {
   inferFactSubject,
   isCurrentChapterLabel,
@@ -60,7 +61,10 @@ export async function bootstrapStructuredStateFromMarkdown(params: {
   const createdFiles: string[] = [];
   const warnings: string[] = [];
   const existingManifest = await loadJsonIfValid(manifestPath, StateManifestSchema, warnings, "manifest.json");
-  const language = existingManifest?.language ?? await resolveRuntimeLanguage(params.bookDir);
+  const language = await resolveRuntimeLanguage(params.bookDir);
+  if (existingManifest && existingManifest.language !== language) {
+    appendWarning(warnings, `manifest language synchronized from ${existingManifest.language} to ${language} using book.json`);
+  }
   const markdownState = await loadMarkdownBootstrapState({
     bookDir: params.bookDir,
     storyDir,
@@ -139,7 +143,10 @@ export async function rewriteStructuredStateFromMarkdown(params: {
 
   const warnings: string[] = [];
   const existingManifest = await loadJsonIfValid(manifestPath, StateManifestSchema, warnings, "manifest.json");
-  const language = existingManifest?.language ?? await resolveRuntimeLanguage(params.bookDir);
+  const language = await resolveRuntimeLanguage(params.bookDir);
+  if (existingManifest && existingManifest.language !== language) {
+    appendWarning(warnings, `manifest language synchronized from ${existingManifest.language} to ${language} using book.json`);
+  }
   const markdownState = await loadMarkdownBootstrapState({
     bookDir: params.bookDir,
     storyDir,
@@ -371,11 +378,11 @@ function parseCurrentStateStateMarkdown(
   });
 }
 
-async function resolveRuntimeLanguage(bookDir: string): Promise<"zh" | "en"> {
+async function resolveRuntimeLanguage(bookDir: string): Promise<WritingLanguage> {
   try {
     const raw = await readFile(join(bookDir, "book.json"), "utf-8");
     const parsed = JSON.parse(raw) as { language?: unknown };
-    return parsed.language === "zh" ? "zh" : "en";
+    return normalizeWritingLanguage(parsed.language) ?? "en";
   } catch {
     return "en";
   }

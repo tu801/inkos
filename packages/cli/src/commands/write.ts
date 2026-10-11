@@ -81,7 +81,7 @@ writeCommand
 
         if (result.status === "state-degraded") {
           if (!opts.json) {
-            log(language === "en"
+      log(language !== "zh"
               ? "State repair required before continuing. Stopping batch."
               : "需要先修复 state，已停止后续连写。");
           }

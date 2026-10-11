@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { WritingLanguageSchema } from "../utils/language.js";
 
 // C1 (v2.0.0 breaking): `maxTokens` 字段已被 providers bank 接管；zod 用 strip mode 静默丢弃老配置里的 `maxTokens`。
 const LLMServiceEntrySchema = z.object({
@@ -132,7 +133,7 @@ export type ResearchSearchConfig = z.infer<typeof ResearchSearchConfigSchema>;
 export const ProjectConfigSchema = z.object({
   name: z.string().min(1),
   version: z.literal("0.1.0"),
-  language: z.enum(["zh", "en"]).default("zh"),
+  language: WritingLanguageSchema.default("zh"),
   llm: LLMConfigSchema,
   notify: z.array(NotifyChannelSchema).default([]),
   detection: DetectionConfigSchema.optional(),

@@ -18,7 +18,7 @@ export interface AnalyzeLongSpanFatigueInput {
   readonly chapterNumber: number;
   readonly chapterContent: string;
   readonly chapterSummary?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface EnglishVarianceBrief {
@@ -208,14 +208,14 @@ function parseSummaryRow(line: string): SummaryRow | null {
 
 function buildChapterTypeIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (cadence.scenePressure?.pressure !== "high") {
     return null;
   }
   const { repeatedType, streak } = cadence.scenePressure;
 
-  if (language === "en") {
+  if (language !== "zh") {
     return {
       severity: "warning",
       category: "Pacing Monotony",
@@ -234,14 +234,14 @@ function buildChapterTypeIssue(
 
 function buildMoodIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (cadence.moodPressure?.pressure !== "high") {
     return null;
   }
   const { highTensionStreak, recentMoods } = cadence.moodPressure;
 
-  if (language === "en") {
+  if (language !== "zh") {
     return {
       severity: "warning",
       category: "Mood Monotony",
@@ -260,14 +260,14 @@ function buildMoodIssue(
 
 function buildTitleIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (cadence.titlePressure?.pressure !== "high") {
     return null;
   }
   const { repeatedToken, count } = cadence.titlePressure;
 
-  if (language === "en") {
+  if (language !== "zh") {
     return {
       severity: "warning",
       category: "Title Collapse",
@@ -315,7 +315,7 @@ async function loadRecentChapterBodies(
 function buildSentencePatternIssue(
   chapterBodies: ReadonlyArray<string>,
   boundary: "opening" | "ending",
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (chapterBodies.length < LONG_SPAN_FATIGUE_THRESHOLDS.boundaryPatternMinBodies) return null;
 
@@ -341,7 +341,7 @@ function buildSentencePatternIssue(
   const sample = summarizeSentence(sentences[2]!, language);
   const pairText = similarities.map((value) => value.toFixed(2)).join("/");
 
-  if (language === "en") {
+  if (language !== "zh") {
     const category = boundary === "opening" ? "Opening Pattern Repetition" : "Ending Pattern Repetition";
     const position = boundary === "opening" ? "openings" : "endings";
     return {
@@ -458,8 +458,8 @@ function extractBoundarySentence(content: string, boundary: "opening" | "ending"
   return boundary === "opening" ? sentences[0]! : sentences[sentences.length - 1]!;
 }
 
-function normalizeSentence(sentence: string, language: "zh" | "en"): string {
-  if (language === "en") {
+function normalizeSentence(sentence: string, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return sentence
       .toLowerCase()
       .replace(ENGLISH_PUNCTUATION, "")
@@ -471,8 +471,8 @@ function normalizeSentence(sentence: string, language: "zh" | "en"): string {
     .toLowerCase();
 }
 
-function summarizeSentence(sentence: string, language: "zh" | "en"): string {
-  if (language === "en") {
+function summarizeSentence(sentence: string, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     const words = sentence
       .toLowerCase()
       .replace(/[^a-z0-9\s]+/gi, " ")

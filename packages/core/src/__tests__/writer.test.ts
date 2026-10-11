@@ -72,7 +72,7 @@ describe("WriterAgent", () => {
           readonly activeOverrides: readonly [];
         };
         readonly lengthSpec: ReturnType<typeof buildLengthSpec>;
-        readonly language?: "zh" | "en";
+        readonly language?: "zh" | "en" | "vi";
         readonly externalContext?: string;
       }): string;
     }).buildGovernedUserPrompt({
@@ -138,7 +138,7 @@ describe("WriterAgent", () => {
         readonly subplotBoard: string;
         readonly emotionalArcs: string;
         readonly characterMatrix: string;
-        readonly language?: "zh" | "en";
+        readonly language?: "zh" | "en" | "vi";
       }): string;
     }).buildUserPrompt({
       chapterNumber: 88,

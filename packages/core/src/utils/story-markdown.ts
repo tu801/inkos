@@ -7,11 +7,11 @@ import {
 
 export function renderSummarySnapshot(
   summaries: ReadonlyArray<StoredSummary>,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): string {
   if (summaries.length === 0) return "- none";
 
-  const headers = language === "en"
+  const headers = language !== "zh"
     ? [
       "| chapter | title | characters | events | stateChanges | hookActivity | mood | chapterType |",
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
@@ -38,11 +38,11 @@ export function renderSummarySnapshot(
 
 export function renderHookSnapshot(
   hooks: ReadonlyArray<StoredHook>,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): string {
   if (hooks.length === 0) return "- none";
 
-  const headers = language === "en"
+  const headers = language !== "zh"
     ? [
       "| hook_id | start_chapter | type | status | last_advanced | expected_payoff | payoff_timing | depends_on | pays_off_in_arc | core_hook | half_life | promoted | notes |",
       "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
@@ -77,19 +77,19 @@ function renderHalfLifeCell(value: number | undefined): string {
   return String(Math.trunc(value));
 }
 
-function renderPromotedCell(value: boolean | undefined, language: "zh" | "en"): string {
+function renderPromotedCell(value: boolean | undefined, language: "zh" | "en" | "vi"): string {
   if (value === undefined) return "";
-  if (language === "en") return value ? "true" : "false";
+  if (language !== "zh") return value ? "true" : "false";
   return value ? "是" : "否";
 }
 
-function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "en"): string {
-  if (ids.length === 0) return language === "en" ? "none" : "无";
+function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "en" | "vi"): string {
+  if (ids.length === 0) return language !== "zh" ? "none" : "无";
   return `[${ids.join(", ")}]`;
 }
 
-function renderCoreHookCell(isCore: boolean, language: "zh" | "en"): string {
-  if (language === "en") return isCore ? "true" : "false";
+function renderCoreHookCell(isCore: boolean, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") return isCore ? "true" : "false";
   return isCore ? "是" : "否";
 }
 

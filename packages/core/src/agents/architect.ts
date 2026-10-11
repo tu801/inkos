@@ -1,4 +1,5 @@
 import { BaseAgent } from "./base.js";
+import { languageOutputInstruction } from "../utils/language.js";
 import type { BookConfig, FanficMode } from "../models/book.js";
 import type { GenreProfile } from "../models/genre-profile.js";
 import { readGenreProfile } from "./rules-reader.js";
@@ -140,15 +141,15 @@ export class ArchitectAgent extends BaseAgent {
     const powerBlock = gp.powerScaling ? "- 有明确的战力等级体系" : "";
     const eraBlock = gp.eraResearch ? "- 需要年代考据支撑（在 story_frame 中织入时代锚，在 book_rules 中写清不可违背的年代限制）" : "";
 
-    const systemPrompt = resolvedLanguage === "en"
+    const systemPrompt = resolvedLanguage !== "zh"
       ? this.buildEnglishFoundationPrompt(book, gp, genreBody, contextBlock, reviewFeedbackBlock, numericalBlock, powerBlock, eraBlock)
       : this.buildChineseFoundationPrompt(book, gp, genreBody, contextBlock, reviewFeedbackBlock, numericalBlock, powerBlock, eraBlock);
 
-    const langPrefix = resolvedLanguage === "en"
-      ? `【LANGUAGE OVERRIDE】ALL output (story_frame, volume_map, roles, book_rules, pending_hooks) MUST be written in English. Character names, place names, and all prose must be in English. The === SECTION: === tags remain unchanged. Do NOT emit rhythm_principles or current_state sections — rhythm principles live inside the last paragraph of volume_map; environment/era anchors (when relevant) are woven into story_frame's world-tonal-ground paragraph.\n\n`
+    const langPrefix = resolvedLanguage !== "zh"
+      ? `${languageOutputInstruction(resolvedLanguage)}\nThe === SECTION: === tags remain unchanged. Do NOT emit rhythm_principles or current_state sections — rhythm principles live inside the last paragraph of volume_map; environment/era anchors (when relevant) are woven into story_frame's world-tonal-ground paragraph.\n\n`
       : "";
-    const userMessage = resolvedLanguage === "en"
-      ? `Generate the complete foundation for a ${gp.name} novel titled "${book.title}". Write everything in English.`
+    const userMessage = resolvedLanguage !== "zh"
+      ? `Generate the complete foundation for a ${gp.name} novel titled "${book.title}". ${languageOutputInstruction(resolvedLanguage)}`
       : `请为标题为"${book.title}"的${gp.name}小说生成完整基础设定。`;
 
     const response = await this.chat([
@@ -606,7 +607,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
   // -------------------------------------------------------------------------
   // Parsing
   // -------------------------------------------------------------------------
-  private async parseSectionsWithRepair(content: string, language: "zh" | "en"): Promise<ArchitectOutput> {
+  private async parseSectionsWithRepair(content: string, language: "zh" | "en" | "vi"): Promise<ArchitectOutput> {
     try {
       return this.parseSections(content, language);
     } catch (error) {
@@ -620,7 +621,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
       } catch (repairError) {
         if (repairError instanceof MissingArchitectSectionsError) {
           const missing = repairError.missing.join("、");
-          const message = language === "en"
+          const message = language !== "zh"
             ? `The story foundation came back incomplete (missing: ${repairError.missing.join(", ")}). `
               + "This usually means the model didn't write every section in one pass — it's not a problem with your input. "
               + "Try again, or switch to a stronger model (e.g. deepseek-v4-pro / gpt-5.5) and regenerate."
@@ -640,10 +641,10 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
 
   private async repairMissingSections(
     error: MissingArchitectSectionsError,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): Promise<string> {
     const missingList = error.missing.join(", ");
-    const system = language === "en"
+    const system = language !== "zh"
       ? [
           "You repair InkOS architect output formatting.",
           "The previous draft is partially useful but is missing required SECTION blocks.",
@@ -660,7 +661,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
           "book_rules 必须是普通 Markdown，不要 YAML；pending_hooks 必须是 Markdown 表格。",
           "不要解释修复过程。",
         ].join("\n");
-    const user = language === "en"
+    const user = language !== "zh"
       ? `Missing sections: ${missingList}\n\nOriginal partial output:\n\n${error.content}`
       : `缺失 section：${missingList}\n\n原始不完整输出如下：\n\n${error.content}`;
 
@@ -671,7 +672,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     return response.content;
   }
 
-  private parseSections(content: string, language: "zh" | "en"): ArchitectOutput {
+  private parseSections(content: string, language: "zh" | "en" | "vi"): ArchitectOutput {
     const parsedSections = this.parseArchitectSectionMap(content);
 
     // Phase 5 new sections take precedence.
@@ -817,20 +818,20 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     return roles;
   }
 
-  private buildStoryBibleShim(storyFrame: string, language: "zh" | "en"): string {
-    if (language === "en") {
+  private buildStoryBibleShim(storyFrame: string, language: "zh" | "en" | "vi"): string {
+    if (language !== "zh") {
       return `# Story Bible (compat pointer — deprecated)\n\n> This file is kept for external readers only. The authoritative source is now:\n> - outline/story_frame.md (theme / tonal ground / core conflict / world rules / endgame)\n> - outline/volume_map.md (chapter-granular plot map)\n> - roles/ directory (one-file-per-character sheets)\n\n## Excerpt from story_frame\n\n${storyFrame.slice(0, 2000)}\n`;
     }
     return `# 故事圣经（兼容指针——已废弃）\n\n> 本文件仅为外部读取保留。权威来源已迁移至：\n> - outline/story_frame.md（主题 / 基调 / 核心冲突 / 世界铁律 / 终局）\n> - outline/volume_map.md（章级别的分卷地图）\n> - roles/ 文件夹（一人一卡角色档案）\n\n## story_frame 摘录\n\n${storyFrame.slice(0, 2000)}\n`;
   }
 
-  private buildCharacterMatrixShim(roles: ReadonlyArray<ArchitectRole>, language: "zh" | "en"): string {
+  private buildCharacterMatrixShim(roles: ReadonlyArray<ArchitectRole>, language: "zh" | "en" | "vi"): string {
     const majorLines = roles.filter((role) => role.tier === "major")
       .map((role) => `- roles/主要角色/${role.name}.md`);
     const minorLines = roles.filter((role) => role.tier === "minor")
       .map((role) => `- roles/次要角色/${role.name}.md`);
 
-    if (language === "en") {
+    if (language !== "zh") {
       return `# Character Matrix (compat pointer — deprecated)\n\n> This file is kept for external readers only. Authoritative source is now the roles/ directory (one-file-per-character).\n\n## Major characters\n\n${majorLines.join("\n") || "(none)"}\n\n## Minor characters\n\n${minorLines.join("\n") || "(none)"}\n`;
     }
     return `# 角色矩阵（兼容指针——已废弃）\n\n> 本文件仅为外部读取保留。权威来源已迁移至 roles/ 文件夹（一人一卡）。\n\n## 主要角色\n\n${majorLines.join("\n") || "（无）"}\n\n## 次要角色\n\n${minorLines.join("\n") || "（无）"}\n`;
@@ -843,7 +844,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     bookDir: string,
     output: ArchitectOutput,
     _numericalSystem: boolean = true,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "en" | "vi" = "zh",
     mode: "init" | "revise" = "init",
   ): Promise<void> {
     const storyDir = join(bookDir, "story");
@@ -887,7 +888,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
       writes.push(writeFile(join(storyDir, "book_rules.md"), output.bookRules, "utf-8"));
       writes.push(writeFile(
         join(storyDir, "character_matrix.md"),
-        language === "en"
+        language !== "zh"
           ? "# Character Matrix\n\n<!-- One ## section per character. Add new characters as new ## blocks. -->\n"
           : "# 角色矩阵\n\n<!-- 每个角色一个 ## 块，新角色追加新 ## 即可。 -->\n",
         "utf-8",
@@ -896,14 +897,14 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
       if (mode === "init") {
         const currentStateSeed = output.currentState?.trim()
           ? output.currentState
-          : (language === "en"
+          : (language !== "zh"
               ? "# Current State\n\n> Seeded at book creation. Runtime state is appended by the consolidator after each chapter.\n"
               : "# 当前状态\n\n> 建书时占位。运行时每章之后由 consolidator 追加最新状态。\n");
         writes.push(writeFile(join(storyDir, "current_state.md"), currentStateSeed, "utf-8"));
         writes.push(writeFile(join(storyDir, "pending_hooks.md"), output.pendingHooks, "utf-8"));
         writes.push(writeFile(
           join(storyDir, "emotional_arcs.md"),
-          language === "en"
+          language !== "zh"
             ? "# Emotional Arcs\n\n| Character | Chapter | Emotional State | Trigger Event | Intensity (1-10) | Arc Direction |\n| --- | --- | --- | --- | --- | --- |\n"
             : "# 情感弧线\n\n| 角色 | 章节 | 情绪状态 | 触发事件 | 强度(1-10) | 弧线方向 |\n|------|------|----------|----------|------------|----------|\n",
           "utf-8",
@@ -927,7 +928,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     // and fight against the "no duplication" rule — readers who need the rhythm
     // content already pull it from volume_map's closing paragraph.
     if (rhythmPrinciples.trim()) {
-      const rhythmFileName = language === "en" ? "rhythm_principles.md" : "节奏原则.md";
+      const rhythmFileName = language !== "zh" ? "rhythm_principles.md" : "节奏原则.md";
       writes.push(writeFile(join(outlineDir, rhythmFileName), rhythmPrinciples, "utf-8"));
     }
 
@@ -971,14 +972,14 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     if (mode === "init") {
       const currentStateSeed = output.currentState?.trim()
         ? output.currentState
-        : (language === "en"
+        : (language !== "zh"
             ? "# Current State\n\n> Seeded at book creation. Runtime state is appended by the consolidator after each chapter. Initial per-character state lives in roles/*.Current_State; load-bearing initial world facts live in pending_hooks rows with start_chapter=0.\n"
             : "# 当前状态\n\n> 建书时占位。运行时每章之后由 consolidator 追加最新状态。每个角色的初始状态详见 roles/*.当前现状；承重的初始世界设定见 pending_hooks 里 startChapter=0 的行。\n");
       writes.push(writeFile(join(storyDir, "current_state.md"), currentStateSeed, "utf-8"));
       writes.push(writeFile(join(storyDir, "pending_hooks.md"), output.pendingHooks, "utf-8"));
       writes.push(writeFile(
         join(storyDir, "emotional_arcs.md"),
-        language === "en"
+        language !== "zh"
           ? "# Emotional Arcs\n\n| Character | Chapter | Emotional State | Trigger Event | Intensity (1-10) | Arc Direction |\n| --- | --- | --- | --- | --- | --- |\n"
           : "# 情感弧线\n\n| 角色 | 章节 | 情绪状态 | 触发事件 | 强度(1-10) | 弧线方向 |\n|------|------|----------|----------|------------|----------|\n",
         "utf-8",
@@ -1013,22 +1014,22 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     const reviewFeedbackBlock = this.buildReviewFeedbackBlock(reviewFeedback, resolvedLanguage);
 
     const contextBlock = externalContext
-      ? (resolvedLanguage === "en"
+      ? (resolvedLanguage !== "zh"
           ? `\n\n## External Instructions\n${externalContext}\n`
           : `\n\n## 外部指令\n${externalContext}\n`)
       : "";
 
     const numericalBlock = gp.numericalSystem
-      ? (resolvedLanguage === "en"
+      ? (resolvedLanguage !== "zh"
           ? "- The story uses a trackable numerical/resource system"
           : "- 有明确的数值/资源体系可追踪")
-      : (resolvedLanguage === "en"
+      : (resolvedLanguage !== "zh"
           ? "- No explicit numerical system"
           : "- 本题材无数值系统");
 
     const isSeries = options?.importMode === "series";
 
-    const continuationDirective = resolvedLanguage === "en"
+    const continuationDirective = resolvedLanguage !== "zh"
       ? (isSeries
           ? `## Continuation Direction Requirements
 The continuation portion must open up new narrative space — new conflict vector, new location, new time horizon. Ignite within 5 chapters; at least 50% fresh scenes.`
@@ -1040,8 +1041,8 @@ Naturally extend the existing arc. Advance existing conflicts, pay off planted h
           : `## 续写方向
 自然延续已有叙事弧线。推进现有冲突、兑现已埋伏笔、引入有机新变数。`);
 
-    const systemPrompt = resolvedLanguage === "en"
-      ? `You are a professional novel architect. Reverse-engineer a prose-density foundation from the source chapters and write the continuation path.${contextBlock}${reviewFeedbackBlock}
+    const systemPrompt = resolvedLanguage !== "zh"
+      ? `${languageOutputInstruction(resolvedLanguage)}\n\nYou are a professional novel architect. Reverse-engineer a prose-density foundation from the source chapters and write the continuation path.${contextBlock}${reviewFeedbackBlock}
 
 ## Book metadata
 - Title: ${book.title}
@@ -1062,7 +1063,7 @@ Follow the consolidated 5-section === SECTION: === layout: story_frame, volume_m
 
 All prose must be derived from the source package. Do not invent settings. If the package says it is compressed, treat chapter catalog + excerpts as evidence for the foundation; the full chapters will be replayed later for detailed truth files. For volume_map, treat existing chapters as "review" (one paragraph) and continuation as prose chapter-level planning. Hook extraction must be complete for the evidence provided.
 
-All output MUST be written in English.`
+All output must follow the language requirement above.`
       : `你是专业的网络小说架构师。从已有章节中反向推导散文密度的基础设定，同时设计续写路径。${contextBlock}${reviewFeedbackBlock}
 
 ## 书籍元信息
@@ -1083,8 +1084,8 @@ ${continuationDirective}
 
 所有 prose 必须从资料包中推导，不得臆造。若资料包声明为压缩包，把章节目录和正文摘录当作基础设定证据；完整章节会在后续回放阶段逐章进入 truth files。volume_map 中，已有章节作为"回顾段"（一段散文），续写部分写到章级 prose。伏笔识别以资料包提供的证据为准，尽量完整。`;
 
-    const userMessage = resolvedLanguage === "en"
-      ? `Generate the complete foundation for an imported ${gp.name} novel titled "${book.title}". Write everything in English.\n\n${chaptersText}`
+    const userMessage = resolvedLanguage !== "zh"
+      ? `Generate the complete foundation for an imported ${gp.name} novel titled "${book.title}". ${languageOutputInstruction(resolvedLanguage)}\n\n${chaptersText}`
       : `以下是《${book.title}》的已有正文资料包，请从中反向推导完整基础设定：\n\n${chaptersText}`;
 
     const response = await this.chat([
@@ -1157,12 +1158,12 @@ ${genreBody}
   // -------------------------------------------------------------------------
   private buildReviewFeedbackBlock(
     reviewFeedback: string | undefined,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): string {
     const trimmed = reviewFeedback?.trim();
     if (!trimmed) return "";
 
-    if (language === "en") {
+    if (language !== "zh") {
       return `\n\n## Previous Review Feedback
 The previous foundation draft was rejected. You must explicitly fix the following issues in this regeneration instead of paraphrasing the same design:
 
@@ -1278,7 +1279,7 @@ ${trimmed}\n`;
       return section;
     }
 
-    const language: "zh" | "en" = /[\u4e00-\u9fff]/.test(section) ? "zh" : "en";
+    const language: "zh" | "en" | "vi" = /[\u4e00-\u9fff]/.test(section) ? "zh" : "en";
     const normalizedHooks = dataRows.map((row, index) => {
       const rawProgress = row[4] ?? "";
       const normalizedProgress = this.parseHookChapterNumber(rawProgress);
@@ -1370,7 +1371,7 @@ ${trimmed}\n`;
     return volumes;
   }
 
-  private normalizeDormantSeedStatus(status: string | undefined, language: "zh" | "en"): string {
+  private normalizeDormantSeedStatus(status: string | undefined, language: "zh" | "en" | "vi"): string {
     const normalized = status?.trim().toLowerCase() ?? "";
     if (!normalized || /^(open|opened|active)$/i.test(normalized)) {
       return language === "zh" ? "暂缓" : "deferred";
@@ -1417,7 +1418,7 @@ ${trimmed}\n`;
     return !["0", "none", "n/a", "na", "-", "无", "未推进"].includes(normalized);
   }
 
-  private mergeHookNotes(notes: string, seedNote: string, language: "zh" | "en"): string {
+  private mergeHookNotes(notes: string, seedNote: string, language: "zh" | "en" | "vi"): string {
     const trimmedNotes = notes.trim();
     const trimmedSeed = seedNote.trim();
     if (!trimmedSeed) {

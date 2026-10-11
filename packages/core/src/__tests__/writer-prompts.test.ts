@@ -73,6 +73,27 @@ describe("buildWriterSystemPrompt", () => {
     expect(prompt).toContain("Play out the climax");
   });
 
+  it("routes Vietnamese through non-Chinese control prompts and requires Vietnamese output", () => {
+    const prompt = buildWriterSystemPrompt(
+      { ...BOOK, language: "vi", chapterWordCount: 2000 },
+      GENRE,
+      null,
+      "",
+      "",
+      "",
+      undefined,
+      5,
+      "creative",
+      undefined,
+      "vi",
+      "governed",
+    );
+
+    expect(prompt).toContain("Toàn bộ nội dung đầu ra phải viết bằng tiếng Việt tự nhiên");
+    expect(prompt).toContain("Writing Craft Rules");
+    expect(prompt).not.toContain("你是一位");
+  });
+
   it("enforces narrative person only when the user explicitly set one (#290)", () => {
     const firstPerson = BookRulesSchema.parse({ narrativePerson: "first" });
     const promptFirst = buildWriterSystemPrompt(

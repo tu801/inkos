@@ -17,9 +17,15 @@ describe("length metrics", () => {
     expect(countChapterLength("He looked at the sky.", "en_words")).toBe(5);
   });
 
+  it("counts Vietnamese chapter length as Unicode words", () => {
+    expect(countChapterLength("Cô ấy ngẩng đầu nhìn bầu trời.", "vi_words")).toBe(7);
+    expect(countChapterLength("lặng-lẽ chẳng nói gì", "vi_words")).toBe(4);
+  });
+
   it("defaults chapter length to the language-native unit", () => {
     expect(defaultChapterLength("zh")).toBe(3000);
     expect(defaultChapterLength("en")).toBe(2000);
+    expect(defaultChapterLength("vi")).toBe(2000);
     expect(defaultChapterLength()).toBe(3000);
   });
 
@@ -59,6 +65,10 @@ describe("length metrics", () => {
     expect(spec.softMax).toBe(2500);
     expect(spec.hardMin).toBe(1600);
     expect(spec.hardMax).toBe(2800);
+  });
+
+  it("uses Vietnamese word counting in length specs", () => {
+    expect(buildLengthSpec(2000, "vi").countingMode).toBe("vi_words");
   });
 
   it("scales the conservative bands for smaller targets", () => {

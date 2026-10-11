@@ -43,11 +43,11 @@ export async function generateStoryGraph(
   client: LLMClient,
   model: string,
   input: GenerateStoryGraphInput,
-  options?: { readonly maxTokens?: number; readonly language?: "zh" | "en" },
+  options?: { readonly maxTokens?: number; readonly language?: "zh" | "en" | "vi" },
 ): Promise<StoryGraph> {
   const language = options?.language ?? "zh";
-  const systemPrompt = language === "en" ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT_ZH;
-  const userPrompt = language === "en"
+  const systemPrompt = language !== "zh" ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT_ZH;
+  const userPrompt = language !== "zh"
     ? `Title: ${input.title}\nPremise: ${input.premise}`
     : `标题：${input.title}\n前提：${input.premise}`;
   const res = await chatCompletion(client, model, [

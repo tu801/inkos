@@ -34,7 +34,7 @@ export interface BookCreatePayload {
   readonly title: string;
   readonly genre: string;
   readonly platform: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly targetChapters: number;
   readonly chapterWordCount: number;
   readonly blurb: string;
@@ -212,11 +212,11 @@ export function pickValidValue(current: string, available: ReadonlyArray<string>
   return available[0] ?? "";
 }
 
-export function defaultChapterWordsForLanguage(language: "zh" | "en"): string {
-  return language === "en" ? "2000" : "3000";
+export function defaultChapterWordsForLanguage(language: "zh" | "en" | "vi"): string {
+  return language === "zh" ? "3000" : "2000";
 }
 
-export function defaultBookCreateForm(language: "zh" | "en"): BookCreateFormState {
+export function defaultBookCreateForm(language: "zh" | "en" | "vi"): BookCreateFormState {
   return {
     title: "",
     genre: "",
@@ -227,8 +227,8 @@ export function defaultBookCreateForm(language: "zh" | "en"): BookCreateFormStat
   };
 }
 
-export function platformOptionsForLanguage(language: "zh" | "en"): ReadonlyArray<PlatformOption> {
-  return language === "en" ? PLATFORMS_EN : PLATFORMS_ZH;
+export function platformOptionsForLanguage(language: "zh" | "en" | "vi"): ReadonlyArray<PlatformOption> {
+  return language === "zh" ? PLATFORMS_ZH : PLATFORMS_EN;
 }
 
 function parsePositiveInteger(value: string): number | null {
@@ -248,7 +248,7 @@ export function isBookCreateFormReady(form: BookCreateFormState): boolean {
 
 export function buildBookCreatePayload(
   form: BookCreateFormState,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): BookCreatePayload {
   const targetChapters = parsePositiveInteger(form.targetChapters);
   const chapterWordCount = parsePositiveInteger(form.chapterWordCount);
@@ -365,9 +365,9 @@ function draftValueAsText(value: unknown): string | null {
 
 export function buildCreationDraftStages(
   draft: BookCreationDraft,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): ReadonlyArray<DraftSummaryStage> {
-  const labels = DRAFT_STAGE_LABELS[language];
+  const labels = DRAFT_STAGE_LABELS[language === "zh" ? "zh" : "en"];
   const missingSet = new Set(draft.missingFields ?? []);
 
   return DRAFT_STAGE_FIELDS.map((stage) => {
@@ -399,9 +399,9 @@ export function buildCreationDraftStages(
 
 export function buildCreationDraftSummary(
   draft: BookCreationDraft,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): ReadonlyArray<DraftSummaryRow> {
-  const rows = language === "en"
+  const rows = language !== "zh"
     ? [
         draft.title ? { key: "title", label: "Title", value: draft.title } : undefined,
         draft.worldPremise ? { key: "worldPremise", label: "World", value: draft.worldPremise } : undefined,
@@ -579,8 +579,9 @@ export async function waitForBookReady(
 export function BookCreate({ nav, theme, t }: { nav: Nav; theme: Theme; t: TFunction }) {
   const c = useColors(theme);
   const { data: project } = useApi<{ language: string }>("/project");
-  const projectLang = (project?.language ?? "zh") as "zh" | "en";
-  const copy = PAGE_COPY[projectLang];
+  const projectLang = (project?.language === "en" || project?.language === "vi" ? project.language : "zh") as "zh" | "en" | "vi";
+  const uiLang = projectLang === "zh" ? "zh" : "en";
+  const copy = PAGE_COPY[uiLang];
   const platformChoices = platformOptionsForLanguage(projectLang);
 
   const [draft, setDraft] = useState<BookCreationDraft | undefined>();

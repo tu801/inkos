@@ -11,9 +11,10 @@ import {
   updateCreationDraft,
   updateAutomationMode,
 } from "./session.js";
+import type { WritingLanguage } from "../utils/language.js";
 
 type ReviseMode = "local-fix" | "rewrite";
-type RuntimeLanguage = "zh" | "en";
+type RuntimeLanguage = WritingLanguage;
 
 export interface InteractionRuntimeTools {
   readonly listBooks: () => Promise<ReadonlyArray<string>>;
@@ -21,7 +22,7 @@ export interface InteractionRuntimeTools {
     readonly title: string;
     readonly genre?: string;
     readonly platform?: string;
-    readonly language?: "zh" | "en";
+    readonly language?: WritingLanguage;
     readonly chapterWordCount?: number;
     readonly targetChapters?: number;
     readonly blurb?: string;
@@ -110,15 +111,15 @@ function extractToolMetadata(value: unknown): InteractionToolMetadata {
 }
 
 function resolveRuntimeLanguage(request: InteractionRequest): RuntimeLanguage {
-  return request.language === "en" ? "en" : "zh";
+  return request.language ?? "zh";
 }
 
 function localize<T>(language: RuntimeLanguage, messages: { zh: T; en: T }): T {
-  return language === "en" ? messages.en : messages.zh;
+  return language === "zh" ? messages.zh : messages.en;
 }
 
 function localizeMode(mode: AutomationMode, language: RuntimeLanguage): string {
-  if (language === "en") {
+  if (language !== "zh") {
     return mode;
   }
 
@@ -133,7 +134,7 @@ function renderCreationDraft(
   draft: NonNullable<InteractionSession["creationDraft"]>,
   language: RuntimeLanguage,
 ): string {
-  const lines = language === "en"
+  const lines = language !== "zh"
     ? [
         "# Current Book Draft",
         draft.title ? `- Title: ${draft.title}` : undefined,

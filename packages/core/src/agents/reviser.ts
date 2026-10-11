@@ -6,6 +6,7 @@ import type { AuditIssue } from "./continuity.js";
 import type { ChapterIntent, ChapterMemo, ContextPackage, RuleStack } from "../models/input-governance.js";
 import { readGenreProfile, readBookLanguage, readBookRules } from "./rules-reader.js";
 import { countChapterLength } from "../utils/length-metrics.js";
+import { languageOutputInstruction, promptBaseLanguage, type WritingLanguage } from "../utils/language.js";
 import { buildGovernedMemoryEvidenceBlocks } from "../utils/governed-context.js";
 import { filterSummaries } from "../utils/context-filter.js";
 import {
@@ -163,8 +164,8 @@ export class ReviserAgent extends BaseAgent {
       ? styleGuideRaw
       : (legacyRulesBody || "(无文风指南)");
 
-    const isEnglish = (bookLanguage ?? gp.language) === "en";
-    const resolvedLanguage = isEnglish ? "en" : "zh";
+    const resolvedLanguage = bookLanguage ?? gp.language;
+    const isEnglish = promptBaseLanguage(resolvedLanguage) === "en";
 
     const issueList = mode === "auto"
       ? buildTieredIssueList(issues, isEnglish)
@@ -189,8 +190,9 @@ export class ReviserAgent extends BaseAgent {
           ? "\n8. Keep the chapter word count within the target range; only allow minor deviation when fixing critical issues truly requires it"
           : "\n8. 保持章节字数在目标区间内；只有在修复关键问题确实需要时才允许轻微偏离")
       : "";
-    const langPrefix = isEnglish
-      ? `【LANGUAGE OVERRIDE】ALL output (FIXED_ISSUES, PATCHES, REVISED_CONTENT, UPDATED_STATE, UPDATED_HOOKS) MUST be in English.\n\n`
+    const outputLanguageInstruction = languageOutputInstruction(resolvedLanguage);
+    const langPrefix = outputLanguageInstruction
+      ? `${outputLanguageInstruction}\nALL output sections (FIXED_ISSUES, PATCHES, REVISED_CONTENT, UPDATED_STATE, UPDATED_HOOKS) must use that language.\n\n`
       : "";
     const governedMode = Boolean(options?.chapterIntent && options?.contextPackage && options?.ruleStack);
     const hooksWorkingSet = governedMode && options?.contextPackage
@@ -220,26 +222,26 @@ export class ReviserAgent extends BaseAgent {
     const systemPrompt = await this.withPromptPackGuidance(systemPromptBase, "longform.reviser");
 
     const ledgerBlock = gp.numericalSystem
-      ? `\n## 资源账本\n${ledger}`
+      ? (isEnglish ? `\n## Resource Ledger\n${ledger}` : `\n## 资源账本\n${ledger}`)
       : "";
     const governedMemoryBlocks = options?.contextPackage
       ? buildGovernedMemoryEvidenceBlocks(options.contextPackage, resolvedLanguage)
       : undefined;
     const hookDebtBlock = governedMemoryBlocks?.hookDebtBlock ?? "";
     const hooksBlock = governedMemoryBlocks?.hooksBlock
-      ?? `\n## 伏笔池\n${hooksWorkingSet}\n`;
+      ?? (isEnglish ? `\n## Hooks Board\n${hooksWorkingSet}\n` : `\n## 伏笔池\n${hooksWorkingSet}\n`);
     const outlineBlock = volumeOutline !== "(文件不存在)"
-      ? `\n## 卷纲\n${volumeOutline}\n`
+      ? (isEnglish ? `\n## Volume Outline\n${volumeOutline}\n` : `\n## 卷纲\n${volumeOutline}\n`)
       : "";
     const bibleBlock = !governedMode && storyBible !== "(文件不存在)"
-      ? `\n## 世界观设定\n${storyBible}\n`
+      ? (isEnglish ? `\n## Story Bible\n${storyBible}\n` : `\n## 世界观设定\n${storyBible}\n`)
       : "";
     const matrixBlock = characterMatrixWorkingSet !== "(文件不存在)"
-      ? `\n## 角色交互矩阵\n${characterMatrixWorkingSet}\n`
+      ? (isEnglish ? `\n## Character Matrix\n${characterMatrixWorkingSet}\n` : `\n## 角色交互矩阵\n${characterMatrixWorkingSet}\n`)
       : "";
     const summariesBlock = governedMemoryBlocks?.summariesBlock
       ?? (chapterSummariesWorkingSet !== "(文件不存在)"
-        ? `\n## 章节摘要\n${chapterSummariesWorkingSet}\n`
+        ? (isEnglish ? `\n## Chapter Summaries\n${chapterSummariesWorkingSet}\n` : `\n## 章节摘要\n${chapterSummariesWorkingSet}\n`)
         : "");
     const volumeSummariesBlock = governedMemoryBlocks?.volumeSummariesBlock ?? "";
 
@@ -247,32 +249,49 @@ export class ReviserAgent extends BaseAgent {
     const hasFanficCanon = fanficCanon !== "(文件不存在)";
 
     const canonBlock = hasParentCanon
-      ? `\n## 正传正典参照（修稿专用）\n本书为番外作品。修改时参照正典约束，不可改变正典事实。\n${parentCanon}\n`
+      ? (isEnglish
+          ? `\n## Parent Canon Reference\nPreserve every established canon fact while revising.\n${parentCanon}\n`
+          : `\n## 正传正典参照（修稿专用）\n本书为番外作品。修改时参照正典约束，不可改变正典事实。\n${parentCanon}\n`)
       : "";
 
     const fanficCanonBlock = hasFanficCanon
-      ? `\n## 同人正典参照（修稿专用）\n本书为同人作品。修改时参照正典角色档案和世界规则，不可违反正典事实。角色对话必须保留原作语癖。\n${fanficCanon}\n`
+      ? (isEnglish
+          ? `\n## Fanfic Canon Reference\nPreserve canon facts, world rules, character profiles, and established speech patterns.\n${fanficCanon}\n`
+          : `\n## 同人正典参照（修稿专用）\n本书为同人作品。修改时参照正典角色档案和世界规则，不可违反正典事实。角色对话必须保留原作语癖。\n${fanficCanon}\n`)
       : "";
     const reducedControlBlock = options?.contextPackage && options.ruleStack
       ? this.buildReducedControlBlock(options.chapterMemo, options.chapterIntentData, options.chapterIntent, options.contextPackage, options.ruleStack)
       : "";
     // Length guardrail only in legacy modes — auto mode delegates length to normalize.
     const lengthGuidanceBlock = mode !== "auto" && options?.lengthSpec
-      ? `\n## 字数护栏\n目标字数：${options.lengthSpec.target}\n允许区间：${options.lengthSpec.softMin}-${options.lengthSpec.softMax}\n极限区间：${options.lengthSpec.hardMin}-${options.lengthSpec.hardMax}\n如果修正后超出允许区间，请优先压缩冗余解释、重复动作和弱信息句，不得新增支线或删掉核心事实。\n`
+      ? (isEnglish
+          ? `\n## Length Guardrail\nTarget: ${options.lengthSpec.target}; soft range: ${options.lengthSpec.softMin}-${options.lengthSpec.softMax}; hard range: ${options.lengthSpec.hardMin}-${options.lengthSpec.hardMax}. Compress repetition before removing core facts; do not add subplots.\n`
+          : `\n## 字数护栏\n目标字数：${options.lengthSpec.target}\n允许区间：${options.lengthSpec.softMin}-${options.lengthSpec.softMax}\n极限区间：${options.lengthSpec.hardMin}-${options.lengthSpec.hardMax}\n如果修正后超出允许区间，请优先压缩冗余解释、重复动作和弱信息句，不得新增支线或删掉核心事实。\n`)
       : "";
     const styleGuideBlock = reducedControlBlock.length === 0
-      ? `\n## 文风指南\n${styleGuide}`
+      ? (isEnglish ? `\n## Style Guide\n${styleGuide}` : `\n## 文风指南\n${styleGuide}`)
       : "";
 
-    const userPrompt = `请修正第${chapterNumber}章。
+    const evidenceBlock = `${ledgerBlock}
+${sanitizeNarrativeEvidenceBlock(hookDebtBlock, resolvedLanguage) ?? ""}${sanitizeNarrativeEvidenceBlock(hooksBlock, resolvedLanguage) ?? ""}${sanitizeNarrativeEvidenceBlock(volumeSummariesBlock, resolvedLanguage) ?? ""}${reducedControlBlock || outlineBlock}${bibleBlock}${matrixBlock}${sanitizeNarrativeEvidenceBlock(summariesBlock, resolvedLanguage) ?? ""}${canonBlock}${fanficCanonBlock}${styleGuideBlock}${lengthGuidanceBlock}`;
+    const userPrompt = isEnglish ? `Revise chapter ${chapterNumber}.
+
+## Review Issues
+${issueList}
+
+## Current State
+${currentState}
+${evidenceBlock}
+
+## Chapter To Revise
+${chapterContent}` : `请修正第${chapterNumber}章。
 
 ## 审稿问题
 ${issueList}
 
 ## 当前状态卡
 ${currentState}
-${ledgerBlock}
-${sanitizeNarrativeEvidenceBlock(hookDebtBlock, resolvedLanguage) ?? ""}${sanitizeNarrativeEvidenceBlock(hooksBlock, resolvedLanguage) ?? ""}${sanitizeNarrativeEvidenceBlock(volumeSummariesBlock, resolvedLanguage) ?? ""}${reducedControlBlock || outlineBlock}${bibleBlock}${matrixBlock}${sanitizeNarrativeEvidenceBlock(summariesBlock, resolvedLanguage) ?? ""}${canonBlock}${fanficCanonBlock}${styleGuideBlock}${lengthGuidanceBlock}
+${evidenceBlock}
 
 ## 待修正章节
 ${chapterContent}`;
@@ -399,13 +418,13 @@ ${chapterContent}`;
     protagonistBlock: string;
     numericalRule: string;
     lengthGuardrail: string;
-    resolvedLanguage: "zh" | "en";
+    resolvedLanguage: WritingLanguage;
     lengthSpec?: LengthSpec;
     autoOutputMode: AutoOutputMode;
   }): string {
     const { langPrefix, gp, protagonistBlock, numericalRule, resolvedLanguage, lengthSpec, autoOutputMode } = params;
     // lengthGuardrail intentionally not used in auto mode — length constraint is embedded in REVISED_CONTENT description
-    const en = resolvedLanguage === "en";
+    const en = promptBaseLanguage(resolvedLanguage) === "en";
     const ledgerSection = gp.numericalSystem
       ? (en ? "\n=== UPDATED_LEDGER ===\n(Full updated resource ledger)" : "\n=== UPDATED_LEDGER ===\n(更新后的完整资源账本)")
       : "";
@@ -532,9 +551,65 @@ ${ledgerSection}
     numericalRule: string;
     lengthGuardrail: string;
     mode: ReviseMode;
-    resolvedLanguage: "zh" | "en";
+    resolvedLanguage: WritingLanguage;
   }): string {
-    const { langPrefix, gp, protagonistBlock, numericalRule, lengthGuardrail, mode } = params;
+    const { langPrefix, gp, protagonistBlock, numericalRule, lengthGuardrail, mode, resolvedLanguage } = params;
+    if (promptBaseLanguage(resolvedLanguage) === "en") {
+      const modeDescription: Record<ReviseMode, string> = {
+        auto: "",
+        polish: "Polish wording, rhythm, paragraph flow, and punctuation without changing facts, plot outcomes, names, or causality.",
+        rewrite: "Rewrite only the problem passages and their immediate context. Preserve core facts, motivations, and as much unaffected prose as possible.",
+        rework: "Restructure scene progression and conflict where necessary without changing the core setting or major event outcomes.",
+        "anti-detect": "Reduce formulaic AI patterns while preserving plot, facts, voice, and causality.",
+        "spot-fix": "Change only the exact sentences or paragraphs identified by the review; all unrelated text must remain untouched.",
+      };
+      const outputFormat = mode === "spot-fix"
+        ? `=== FIXED_ISSUES ===
+(One fix per line; explain here if a safe local fix is impossible.)
+
+=== PATCHES ===
+--- PATCH 1 ---
+TARGET_TEXT:
+(Exact, uniquely matching quote from the original.)
+REPLACEMENT_TEXT:
+(Local replacement text.)
+--- END PATCH ---
+
+=== UPDATED_STATE ===
+(Complete updated state card.)
+${gp.numericalSystem ? "\n=== UPDATED_LEDGER ===\n(Complete updated resource ledger.)" : ""}
+=== UPDATED_HOOKS ===
+(Complete updated hooks board.)`
+        : `=== FIXED_ISSUES ===
+(One fix per line.)
+
+=== REVISED_CONTENT ===
+(Complete revised chapter.)
+
+=== UPDATED_STATE ===
+(Complete updated state card.)
+${gp.numericalSystem ? "\n=== UPDATED_LEDGER ===\n(Complete updated resource ledger.)" : ""}
+=== UPDATED_HOOKS ===
+(Complete updated hooks board.)`;
+
+      return `${langPrefix}You are a professional ${gp.name} web-fiction revision editor. Revise the chapter according to the review notes.${protagonistBlock}
+
+Revision mode: ${modeDescription[mode]}
+
+Revision principles:
+1. Keep the scope within the selected mode.
+2. Fix root causes instead of applying superficial polish.${numericalRule}
+3. Keep hook status synchronized with the hooks board.
+4. Do not change plot direction or core conflicts.
+5. Preserve the source chapter's language, voice, and rhythm.
+6. Update the state card${gp.numericalSystem ? ", ledger" : ""}, and hooks board after revision.
+${lengthGuardrail}
+${mode === "spot-fix" ? "\n7. Output local PATCHES only; TARGET_TEXT must match exactly once. If a broad rewrite is required, explain why and leave PATCHES empty." : ""}
+
+Output format:
+
+${outputFormat}`;
+    }
     const modeDesc = MODE_DESCRIPTIONS[mode];
     const outputFormat = mode === "spot-fix"
       ? `=== FIXED_ISSUES ===

@@ -41,7 +41,7 @@ export interface ContextBudget {
 export interface CompressibleContextCompileRequest {
   readonly chapterNumber: number;
   readonly goal: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly maxInputTokens: number;
   readonly protectedEntries: ContextPackage["selectedContext"];
   readonly compressibleEntries: ContextPackage["selectedContext"];
@@ -55,7 +55,7 @@ export interface OutlineSectionSelectionRequest {
   readonly chapterNumber: number;
   readonly goal: string;
   readonly outlineNode: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly candidates: ReadonlyArray<{
     readonly source: string;
     readonly heading: string;
@@ -135,7 +135,7 @@ async function applyContextBudgetIfNeeded(params: {
   readonly contextPackage: ContextPackage;
   readonly chapterNumber: number;
   readonly goal: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly contextBudget?: ContextBudget;
   readonly compiler?: CompressibleContextCompiler;
   readonly onContextCompression?: ContextCompressionCallback;
@@ -331,7 +331,7 @@ export class ComposerAgent extends BaseAgent {
     if (request.candidates.length <= 1) {
       return request.candidates.map((candidate) => candidate.source);
     }
-    const isEn = request.language === "en";
+    const isEn = request.language !== "zh";
     const candidates = request.candidates.map((candidate, index) => [
       `#${index + 1} ${candidate.source}`,
       `heading: ${candidate.heading}`,
@@ -379,7 +379,7 @@ export class ComposerAgent extends BaseAgent {
   }
 
   async compileCompressibleContext(request: CompressibleContextCompileRequest): Promise<string> {
-    const isEn = request.language === "en";
+    const isEn = request.language !== "zh";
     const protectedBlock = renderContextEntries(request.protectedEntries);
     const compressibleBlock = renderContextEntries(request.compressibleEntries);
     const system = isEn
@@ -442,7 +442,7 @@ export function contextBudgetFromClient(client: LLMClient): ContextBudget | unde
 async function collectSelectedContext(
   storyDir: string,
   plan: PlanChapterOutput,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
   outlineSectionSelector?: OutlineSectionSelector,
 ): Promise<ContextPackage["selectedContext"]> {
     const retrievalHints = deriveRetrievalHints(plan);
@@ -684,7 +684,7 @@ async function buildHookDebtEntries(
       readonly payoffTiming?: string;
       readonly notes: string;
     }>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): Promise<ContextPackage["selectedContext"]> {
     const targetHookIds = [...new Set(plan.memo.threadRefs)];
     if (targetHookIds.length === 0) {
@@ -703,8 +703,8 @@ async function buildHookDebtEntries(
 
       const seedSummary = findHookSummary(summaries, hook.hookId, hook.startChapter, "seed");
       const latestSummary = findHookSummary(summaries, hook.hookId, hook.lastAdvancedChapter, "latest");
-      const role = language === "en" ? "memo-referenced debt" : "备忘引用旧债";
-      const promise = hook.expectedPayoff || (language === "en" ? "(unspecified)" : "（未写明）");
+      const role = language !== "zh" ? "memo-referenced debt" : "备忘引用旧债";
+      const promise = hook.expectedPayoff || (language !== "zh" ? "(unspecified)" : "（未写明）");
       const seedBeat = seedSummary
         ? renderHookDebtBeat(seedSummary)
         : (hook.notes || promise);
@@ -715,10 +715,10 @@ async function buildHookDebtEntries(
 
       return [{
         source: `runtime/hook_debt#${hook.hookId}`,
-        reason: language === "en"
+        reason: language !== "zh"
           ? "Narrative debt brief with original seed text for this hook agenda target."
           : "含原始种子文本的叙事债务简报。",
-        excerpt: language === "en"
+        excerpt: language !== "zh"
           ? [
               `${hook.hookId} (${hook.type}, ${role}, open ${age} chapters)`,
               `reader promise: ${promise}`,
@@ -773,7 +773,7 @@ async function maybeOutlineSectionSources(
   reason: string,
   plan: PlanChapterOutput,
   kind: "story-frame" | "volume-map",
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
   outlineSectionSelector?: OutlineSectionSelector,
 ): Promise<ContextPackage["selectedContext"]> {
     const path = join(storyDir, fileName);
@@ -812,7 +812,7 @@ async function selectOutlineSectionEntries(params: {
   readonly reason: string;
   readonly plan: PlanChapterOutput;
   readonly kind: "story-frame" | "volume-map";
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly outlineSectionSelector?: OutlineSectionSelector;
 }): Promise<ContextPackage["selectedContext"]> {
     const sections = splitMarkdownSections(params.content);

@@ -5,6 +5,7 @@ import type { LengthSpec } from "../models/length-governance.js";
 import { buildFanficCanonSection, buildCharacterVoiceProfiles, buildFanficModeInstructions } from "./fanfic-prompt-sections.js";
 import { buildEnglishCoreRules, buildEnglishAntiAIRules, buildEnglishCharacterMethod, buildEnglishPreWriteChecklist, buildEnglishGenreIntro } from "./en-prompt-sections.js";
 import { buildLengthSpec } from "../utils/length-metrics.js";
+import { languageOutputInstruction, promptBaseLanguage, type WritingLanguage } from "../utils/language.js";
 
 export interface FanficContext {
   readonly fanficCanon: string;
@@ -27,13 +28,15 @@ export function buildWriterSystemPrompt(
   chapterNumber?: number,
   mode: "full" | "creative" = "full",
   fanficContext?: FanficContext,
-  languageOverride?: "zh" | "en",
+  languageOverride?: WritingLanguage,
   inputProfile: "legacy" | "governed" = "legacy",
   lengthSpec?: LengthSpec,
 ): string {
-  const isEnglish = (languageOverride ?? genreProfile.language) === "en";
+  const language = languageOverride ?? genreProfile.language;
+  const promptLanguage = promptBaseLanguage(language);
+  const isEnglish = promptLanguage === "en";
   const governed = inputProfile === "governed";
-  const resolvedLengthSpec = lengthSpec ?? buildLengthSpec(book.chapterWordCount, isEnglish ? "en" : "zh");
+  const resolvedLengthSpec = lengthSpec ?? buildLengthSpec(book.chapterWordCount, language);
 
   const outputSection = isEnglish
     ? (mode === "creative"
@@ -45,6 +48,7 @@ export function buildWriterSystemPrompt(
 
   const sections = isEnglish
     ? [
+        languageOutputInstruction(language),
         buildEnglishGenreIntro(book, genreProfile),
         buildEnglishCoreRules(book),
         buildGovernedInputContract("en", governed),
@@ -104,10 +108,10 @@ function buildGenreIntro(book: BookConfig, gp: GenreProfile): string {
   return `你是一位专业的${gp.name}网络小说作家。你为${book.platform}平台写作。`;
 }
 
-function buildGovernedInputContract(language: "zh" | "en", governed: boolean): string {
+function buildGovernedInputContract(language: "zh" | "en" | "vi", governed: boolean): string {
   if (!governed) return "";
 
-  if (language === "en") {
+  if (language !== "zh") {
     return `## Input Governance Contract
 
 - Chapter-specific steering comes from the provided chapter intent and composed context package.
@@ -138,10 +142,10 @@ function buildGovernedInputContract(language: "zh" | "en", governed: boolean): s
 // Chapter memo alignment — 7 sections from mobile web-fiction craft methodology
 // ---------------------------------------------------------------------------
 
-function buildChapterMemoContract(language: "zh" | "en", governed: boolean): string {
+function buildChapterMemoContract(language: "zh" | "en" | "vi", governed: boolean): string {
   if (!governed) return "";
 
-  if (language === "en") {
+  if (language !== "zh") {
     return `## Chapter Memo Alignment
 
 You will receive a chapter_memo composed of 7 markdown sections:
@@ -174,8 +178,8 @@ Address each section in order when drafting the chapter. Every section must leav
 写作时按段落顺序落实，每一段都要在正文里有对应的兑现痕迹。如果某一段没有体现到正文里，本章不算完成。**写完初稿后自检一遍 hook 账**：把 advance 和 resolve 的 hook_id 列下来，对照正文，确认每一个都能指到一段带具体动作/物件/对话的 prose。如果指不到，回去补写；不要提交"账本在 memo 里、正文里没落"的稿子——审稿会标记缺口并要求补出具体场景。`;
 }
 
-function buildLengthGuidance(lengthSpec: LengthSpec, language: "zh" | "en"): string {
-  if (language === "en") {
+function buildLengthGuidance(lengthSpec: LengthSpec, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return `## Length Guidance
 
 - Target length: ${lengthSpec.target} words
@@ -445,8 +449,8 @@ function buildImmersionTechniques(): string {
 // Full methodology is in style_guide.md; this is the always-on reminder.
 // ---------------------------------------------------------------------------
 
-function buildWritingCraftCard(language: "zh" | "en"): string {
-  if (language === "en") {
+function buildWritingCraftCard(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return `## Writing Craft Rules
 
 - **Emotion**: Externalize through action — never write "he felt angry", write "he crushed the teacup"
@@ -489,8 +493,8 @@ function buildWritingCraftCard(language: "zh" | "en"): string {
 // 创作宪法（14 条原则精华） — always-on prose; internalise, do not report back
 // ---------------------------------------------------------------------------
 
-function buildCreativeConstitution(language: "zh" | "en"): string {
-  if (language === "en") {
+function buildCreativeConstitution(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return `## Creative Constitution
 
 These fourteen principles are your spine. Internalise them — never quote them, never list them, never narrate them. They tell you how to pick between two plausible next sentences.
@@ -508,8 +512,8 @@ Show don't tell，用细节堆出真实，禁止用一行直白陈述替代情�
 // 代入感六支柱 — always-on prose; internalise, do not narrate checklist items
 // ---------------------------------------------------------------------------
 
-function buildImmersionPillars(language: "zh" | "en"): string {
-  if (language === "en") {
+function buildImmersionPillars(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return `## Six Pillars of Immersion
 
 Reader immersion rests on six pillars. Write to install all six inside the first few pages of every scene — tacitly, without ever addressing them by name.
@@ -531,11 +535,11 @@ Tag the basics: within a hundred words the reader knows who is on stage, where t
 
 export function buildGoldenOpeningDiscipline(
   chapterNumber: number | undefined,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): string {
   if (chapterNumber === undefined || chapterNumber > 3) return "";
 
-  if (language === "en") {
+  if (language !== "zh") {
     return `## Golden Opening Discipline — Chapter ${chapterNumber}
 
 This is chapter ${chapterNumber} of the opening three — your prose directly decides whether the reader stays. The Golden Three Chapters rule is a hard constraint on your sentences, not advice. Chapter 1: within the first 800 words the protagonist must trip the main-line conflict (chase, dead-end, dispossession, transmigration-as-crisis); long background paragraphs are forbidden, and worldbuilding rides on the protagonist's actions instead of being explained in a block. **The last sentence of the first 300 words (the reader's first phone screen) must land a dramatic / reversal / striking beat — "Officer, I transmigrated"-level, "I'll probably die tomorrow"-level, "I'm attending my own funeral"-level — not background or scene-setting. When the reader scrolls to the bottom of the first screen they must feel pulled into the next line.** Chapter 2: the edge — power, system, rebirth-memory, information advantage — must be **performed** (one concrete event of using it, with a visible consequence), not **announced** (a narrator paragraph saying it exists). Chapter 3: somewhere in this chapter the protagonist's next quantifiable short-term goal must surface, so the reader can name what comes next when they close the page.
@@ -555,7 +559,7 @@ The discipline that runs across all three opening chapters: paragraphs of three 
 // ---------------------------------------------------------------------------
 
 function buildGoldenChaptersRules(chapterNumber?: number, language?: string): string {
-  const isEnglish = language === "en";
+  const isEnglish = language !== "zh";
   const goldenLimit = isEnglish ? 5 : 3;
   if (chapterNumber === undefined || chapterNumber > goldenLimit) return "";
 
@@ -680,10 +684,10 @@ function buildGenreRules(gp: GenreProfile, genreBody: string): string {
 // Narrative person is a durable user constraint: enforce it only when the user
 // explicitly set one (book_rules.narrativePerson). When unset, stay silent so the
 // genre default applies — we never impose a person the user didn't ask for.
-function buildNarrativePersonRule(bookRules: BookRules | null, language: "zh" | "en"): string {
+function buildNarrativePersonRule(bookRules: BookRules | null, language: "zh" | "en" | "vi"): string {
   const person = bookRules?.narrativePerson;
   if (!person) return "";
-  if (language === "en") {
+  if (language !== "zh") {
     return person === "first"
       ? "## Narrative person (hard constraint)\nWrite this book entirely in FIRST person (the protagonist's inner viewpoint). Do NOT slip into third person or an omniscient narrator — this overrides genre convention and your default."
       : "## Narrative person (hard constraint)\nWrite this book in THIRD person.";
@@ -700,8 +704,8 @@ function buildNarrativePersonRule(bookRules: BookRules | null, language: "zh" | 
  *    chapter is tight (climaxes told, not shown).
  * Theme-independent, so this lives in the always-on writer discipline.
  */
-function buildProseExecutionRules(language: "zh" | "en"): string {
-  if (language === "en") {
+function buildProseExecutionRules(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return `## Prose execution (cross-theme failure modes)
 
 **Simile restraint.** Do not lean on "like / as if / as though" as a default device. At most one simile per scene, and only when it lights the image up better than plain rendering would. Priority is always: a precise verb > a concrete action or sensory detail > direct description > simile. Before reaching for "like…", check whether an exact verb or a concrete action would hit harder.

@@ -1,11 +1,12 @@
 import { BaseAgent } from "./base.js";
 import type { ChapterMemo } from "../models/input-governance.js";
+import { languageOutputInstruction } from "../utils/language.js";
 
 export interface PolishChapterInput {
   readonly chapterContent: string;
   readonly chapterNumber: number;
   readonly chapterMemo?: ChapterMemo;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly temperature?: number;
 }
 
@@ -36,7 +37,7 @@ export class PolisherAgent extends BaseAgent {
 
   async polishChapter(input: PolishChapterInput): Promise<PolishChapterOutput> {
     const language = input.language ?? "zh";
-    const isEnglish = language === "en";
+    const isEnglish = language !== "zh";
 
     const memoBlock = input.chapterMemo
       ? isEnglish
@@ -44,9 +45,13 @@ export class PolisherAgent extends BaseAgent {
         : `\n\n## 章节备忘（润色不得偏离此目标）\ngoal：${input.chapterMemo.goal}\n\n${input.chapterMemo.body}`
       : "";
 
-    const systemPrompt = isEnglish
+    const baseSystemPrompt = isEnglish
       ? buildEnglishSystemPrompt()
       : buildChineseSystemPrompt();
+    const outputInstruction = languageOutputInstruction(language);
+    const systemPrompt = outputInstruction
+      ? `${outputInstruction}\n\n${baseSystemPrompt}`
+      : baseSystemPrompt;
 
     const userPrompt = isEnglish
       ? `Polish chapter ${input.chapterNumber}. Return the polished chapter in full, nothing else — no JSON, no headers, no commentary.${memoBlock}\n\n## Chapter Under Polish\n${input.chapterContent}`

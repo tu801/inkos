@@ -1,4 +1,5 @@
 import { BaseAgent } from "./base.js";
+import { languageOutputInstruction } from "../utils/language.js";
 
 export interface ValidationWarning {
   readonly category: string;
@@ -36,7 +37,7 @@ export class StateValidatorAgent extends BaseAgent {
     newState: string,
     oldHooks: string,
     newHooks: string,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "en" | "vi" = "zh",
     authorityContext?: StateValidationAuthorityContext,
   ): Promise<ValidationResult> {
     const stateDiff = this.computeDiff(oldState, newState, "State Card");
@@ -47,9 +48,7 @@ export class StateValidatorAgent extends BaseAgent {
       return { warnings: [], passed: true };
     }
 
-    const langInstruction = language === "en"
-      ? "Respond in English."
-      : "用中文回答。";
+    const langInstruction = languageOutputInstruction(language) || "用中文回答。";
 
     const systemPrompt = `You are a continuity validator for a novel writing system. ${langInstruction}
 
