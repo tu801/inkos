@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -64,7 +64,29 @@ describe("CLI mini-flows", () => {
     });
   });
 
-  function run(args: string[]): string {
+  it("sends write next with a decodable chapter range", async () => {
+    run(["init", "--lang", "vi"]);
+    const now = new Date().toISOString();
+    await saveWorkManifest(projectDir, createWorkManifest({ id: "ma-thien-ton", title: "Ma Thiên Tôn", profileId: "longform-novel", language: "vi", now }));
+    await mkdir(join(projectDir, "works", "ma-thien-ton", "source"), { recursive: true });
+    await writeFile(join(projectDir, "works", "ma-thien-ton", "source", "book.json"), JSON.stringify({
+      id: "ma-thien-ton", title: "Ma Thiên Tôn", platform: "other", genre: "xianxia", status: "active",
+      targetChapters: 10, chapterWordCount: 2000, language: "vi", createdAt: now, updatedAt: now,
+    }));
+
+    let failure = "";
+    try {
+      run(["write", "next", "ma-thien-ton"], { INKOS_LLM_PROVIDER: "openai", INKOS_LLM_BASE_URL: "http://127.0.0.1:9/v1", INKOS_LLM_MODEL: "fixture", INKOS_LLM_API_KEY: "fixture" });
+    } catch (error) {
+      failure = String((error as { stdout?: string }).stdout) + String((error as { stderr?: string }).stderr);
+    }
+
+    // The action must pass schema decoding and reach the pipeline, which rejects the foundation-less fixture.
+    expect(failure).not.toContain("Unable to decode value");
+    expect(failure).toContain("is not ready for chapter writing");
+  });
+
+  function run(args: string[], extraEnv: Record<string, string> = {}): string {
     return execFileSync("node", [cliEntry, ...args], {
       cwd: projectDir,
       encoding: "utf-8",
@@ -72,6 +94,7 @@ describe("CLI mini-flows", () => {
       env: {
         ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("INKOS_"))),
         HOME: projectDir,
+        ...extraEnv,
       },
     });
   }
