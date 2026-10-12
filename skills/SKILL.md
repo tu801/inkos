@@ -57,6 +57,14 @@ inkos export <book-id> --format epub
 
 Internal planning, semantic context selection, writing, state projection, and review are one Harness trajectory. `review` displays persisted qualitative observations.
 
+## Steering upcoming chapters
+
+There is no separate plan or compose command: chapter planning and context composition run inside `write next`. Steer them with:
+
+- One-run guidance: `inkos write next <book-id> --context "..."` (or `--context-file <path>`, or piped stdin). It applies to every chapter of that run and has the highest priority. `inkos auto` takes no guidance; use `inkos revise ... --brief "..."` for revisions.
+- Standing direction: `current_focus.md` (what the next chapters should prioritize) and `author_intent.md` (long-horizon direction). The planner rereads both for every chapter and writing receives them as protected, never-compressed context. Replace `current_focus.md` once its focus is delivered so it stops steering later chapters.
+- Change these files only through the `write_truth_file` capability action (Studio Chat, `inkos tui`, or `inkos agent --book <book-id> "..."`), never by editing storage paths directly.
+
 ## Revision modes
 
 - `spot-fix`: exact local text patches applied by the host.
